@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Flash Controller Player</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+</head>
+<body>
+  <header id="topbar">
+    <div id="loader">
+      <label class="file-btn" for="file-input">Open SWF…</label>
+      <input type="file" id="file-input" accept=".swf,application/x-shockwave-flash" hidden />
+      <input type="url" id="url-input" placeholder="…or paste a SWF URL" autocomplete="off" />
+      <button id="load-url-btn" type="button">Load</button>
+    </div>
+    <div id="status">
+      <span id="profile-label" title="Active profile">No SWF loaded</span>
+      <span id="input-mode" data-mode="keyboard" title="Active input mode">⌨</span>
+      <button id="settings-btn" type="button" title="Mapping settings" aria-expanded="false">⚙</button>
+      <button id="fullscreen-btn" type="button" title="Fullscreen">⛶</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="player-wrapper" tabindex="0">
+      <div id="ruffle-host"></div>
+      <div id="touch-overlay" hidden></div>
+      <div id="empty-state">Drop a SWF here, or open one above.</div>
+      <div id="toast" hidden></div>
+    </div>
+  </main>
+
+  <aside id="settings-panel" hidden aria-label="Mapping settings">
+    <header>
+      <h2>Settings</h2>
+      <button id="settings-close" type="button" aria-label="Close settings">✕</button>
+    </header>
+    <section>
+      <h3>Touch overlay</h3>
+      <label>
+        Visibility
+        <select id="touch-mode">
+          <option value="auto">Auto (touch devices)</option>
+          <option value="always">Always</option>
+          <option value="never">Never</option>
+        </select>
+      </label>
+      <label>
+        Opacity
+        <input type="range" id="touch-opacity" min="0.1" max="1" step="0.05" />
+      </label>
+      <button id="touch-edit-btn" type="button">Edit layout…</button>
+    </section>
+    <section>
+      <h3>Gamepad &amp; touch bindings</h3>
+      <p class="hint">Tap a binding then press the keyboard key it should produce.</p>
+      <div id="bindings-list"></div>
+    </section>
+    <section>
+      <button id="reset-profile-btn" type="button" class="danger">Reset profile to default</button>
+    </section>
+  </aside>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
