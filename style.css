@@ -190,6 +190,48 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 .binding-row .rebind-btn { background: var(--panel-2); padding: 0.3em 0.7em; font-size: 0.85em; }
 .binding-row .clear-btn  { background: transparent; color: var(--muted); padding: 0.3em 0.5em; font-size: 0.85em; }
 
+/* Key picker (used during rebind on touch devices) */
+.key-picker-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  padding: 1em;
+}
+.key-picker {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9em 1em 1em;
+  width: 380px; max-width: 100%;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.key-picker header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.3em;
+}
+.picker-close { background: transparent; padding: 0.2em 0.5em; font-size: 1.2em; }
+.picker-section h5 {
+  margin: 0.8em 0 0.35em; font-size: 0.75em;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;
+}
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 0.3em;
+}
+.picker-grid button {
+  background: var(--panel-2); color: var(--fg);
+  padding: 0.55em 0.3em;
+  font-family: ui-monospace, monospace;
+  font-size: 0.95em;
+  min-height: 44px; /* tap-friendly */
+}
+.picker-grid button:hover { background: var(--accent); }
+.picker-unbind { background: var(--danger); margin-top: 0.8em; width: 100%; }
+.picker-hint { color: var(--muted); font-size: 0.85em; text-align: center; margin: 0.6em 0 0; }
+
 /* Fullscreen */
 #player-wrapper:fullscreen {
   width: 100vw; height: 100vh;

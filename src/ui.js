@@ -143,16 +143,94 @@ export class SettingsUI {
 
   _beginCapture(binding, rowEl) {
     this._cancelCapture();
-    this.capturing = { binding, rowEl };
+    const label = rowEl.querySelector('.label')?.textContent || binding;
+    this.capturing = { binding, rowEl, label };
     rowEl.classList.add('capturing');
     rowEl.querySelector('.keyspec').textContent = 'Press a key…';
+    this._openKeyPicker(binding, label);
   }
 
   _cancelCapture() {
     if (!this.capturing) return;
     this.capturing.rowEl.classList.remove('capturing');
     this.capturing = null;
+    this._closeKeyPicker();
     this._renderBindings();
+  }
+
+  _openKeyPicker(binding, label) {
+    this._closeKeyPicker();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'key-picker-overlay';
+    overlay.addEventListener('click', (ev) => {
+      if (ev.target === overlay) this._cancelCapture();
+    });
+
+    const picker = document.createElement('div');
+    picker.className = 'key-picker';
+
+    const header = document.createElement('header');
+    const title = document.createElement('span');
+    title.innerHTML = 'Bind <strong></strong> to:';
+    title.querySelector('strong').textContent = label;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'picker-close';
+    closeBtn.textContent = '✕';
+    closeBtn.addEventListener('click', () => this._cancelCapture());
+    header.append(title, closeBtn);
+    picker.appendChild(header);
+
+    const sections = [
+      { label: 'Arrows',  keys: ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'] },
+      { label: 'Special', keys: ['Space', 'Enter', 'Escape', 'Tab', 'Backspace', 'Shift', 'Control', 'Alt'] },
+      { label: 'Letters', keys: Array.from({ length: 26 }, (_, i) => 'Key' + String.fromCharCode(65 + i)) },
+      { label: 'Digits',  keys: Array.from({ length: 10 }, (_, i) => 'Digit' + i) },
+    ];
+
+    for (const section of sections) {
+      const sec = document.createElement('section');
+      sec.className = 'picker-section';
+      const h = document.createElement('h5');
+      h.textContent = section.label;
+      sec.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'picker-grid';
+      for (const k of section.keys) {
+        const spec = KEY_SPECS[k];
+        if (!spec) continue;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = formatSpec(spec);
+        btn.addEventListener('click', () => this._setBinding(binding, spec));
+        grid.appendChild(btn);
+      }
+      sec.appendChild(grid);
+      picker.appendChild(sec);
+    }
+
+    const unbindBtn = document.createElement('button');
+    unbindBtn.type = 'button';
+    unbindBtn.className = 'picker-unbind';
+    unbindBtn.textContent = 'Unbind';
+    unbindBtn.addEventListener('click', () => this._setBinding(binding, null));
+    picker.appendChild(unbindBtn);
+
+    const hint = document.createElement('p');
+    hint.className = 'picker-hint';
+    hint.textContent = '…or press a key on a keyboard';
+    picker.appendChild(hint);
+
+    overlay.appendChild(picker);
+    document.body.appendChild(overlay);
+    this._pickerOverlay = overlay;
+  }
+
+  _closeKeyPicker() {
+    if (this._pickerOverlay) {
+      this._pickerOverlay.remove();
+      this._pickerOverlay = null;
+    }
   }
 
   _onKeyCapture = (ev) => {
