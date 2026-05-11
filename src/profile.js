@@ -43,6 +43,10 @@ export function defaultProfile() {
         opacity: 0.6,
         layout: defaultTouchLayout(),
       },
+      display: {
+        // 'auto' = top in portrait, center in landscape.
+        align: 'auto',
+      },
     },
     detected: null,
   };

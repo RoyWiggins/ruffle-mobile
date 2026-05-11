@@ -9,6 +9,7 @@ import { InputDispatcher } from './input.js';
 import { GamepadHandler } from './gamepad.js';
 import { TouchOverlay } from './touch.js';
 import { SettingsUI } from './ui.js';
+import { readSwfDimensions } from './swf.js';
 
 const wrapper       = document.getElementById('player-wrapper');
 const ruffleHost    = document.getElementById('ruffle-host');
@@ -27,6 +28,7 @@ let currentProfile = defaultProfile();
 let ruffleInstance = null;
 let player = null;
 let inputModeTimer = null;
+let swfDimensions = null; // { width, height } or null
 
 const input = new InputDispatcher();
 const gp = new GamepadHandler(input, getCurrentProfile, onInputActivity);
@@ -61,6 +63,7 @@ function applyProfile() {
   input.releaseAll();
   touch.render();
   applyTouchVisibility();
+  fitPlayer();
   if (!currentProfile.swf_sha256) profileLabel.textContent = 'No SWF loaded';
   else if (currentProfile.label) profileLabel.textContent = currentProfile.label;
   else profileLabel.textContent = 'Profile ' + currentProfile.swf_sha256.slice(0, 8);
@@ -96,8 +99,12 @@ async function ensureRuffle() {
 }
 
 async function loadSwfFromBuffer(buf, label) {
-  const hash = await sha256Hex(buf);
+  const [hash, dims] = await Promise.all([
+    sha256Hex(buf),
+    readSwfDimensions(buf).catch(() => null),
+  ]);
   currentProfile = getOrCreateProfile(hash, label);
+  swfDimensions = dims;
 
   if (!ruffleInstance) ruffleInstance = await ensureRuffle();
 
@@ -108,20 +115,52 @@ async function loadSwfFromBuffer(buf, label) {
   }
 
   player = ruffleInstance.createPlayer();
-  player.style.width = '100%';
-  player.style.height = '100%';
+  // Disable Ruffle's own letterbox — we size the player to the game aspect
+  // and align it ourselves so the user can choose top/center/bottom.
   ruffleHost.innerHTML = '';
   ruffleHost.appendChild(player);
 
-  await player.load({ data: buf });
+  await player.load({ data: buf, letterbox: 'off' });
   wrapper.classList.add('has-swf');
   input.setHost(player);
+  fitPlayer();
 
   try { player.focus({ preventScroll: true }); } catch (_) {}
   wrapper.focus({ preventScroll: true });
 
   applyProfile();
   showToast(`Loaded · profile ${hash.slice(0, 8)}`);
+}
+
+function effectiveAlign() {
+  const setting = currentProfile.profile.display?.align || 'auto';
+  if (setting !== 'auto') return setting;
+  const portrait = wrapper.clientHeight > wrapper.clientWidth;
+  return portrait ? 'top' : 'center';
+}
+
+function fitPlayer() {
+  if (!player) return;
+  const align = effectiveAlign();
+  ruffleHost.classList.remove('align-top', 'align-center', 'align-bottom');
+  ruffleHost.classList.add('align-' + align);
+
+  if (!swfDimensions) {
+    // No dimensions parsed — let the player fill the host.
+    player.style.width = '100%';
+    player.style.height = '100%';
+    return;
+  }
+  const hw = ruffleHost.clientWidth;
+  const hh = ruffleHost.clientHeight;
+  if (hw === 0 || hh === 0) return;
+  const ga = swfDimensions.width / swfDimensions.height;
+  const ha = hw / hh;
+  let w, h;
+  if (ga > ha) { w = hw; h = w / ga; }
+  else         { h = hh; w = h * ga; }
+  player.style.width = w + 'px';
+  player.style.height = h + 'px';
 }
 
 async function loadFromFile(file) {
@@ -185,10 +224,27 @@ fullscreenBtn.addEventListener('click', () => {
   }
 });
 
+let doneEditBtn = null;
 function toggleTouchEdit() {
   const editing = !touch.editing;
   touch.setEditing(editing);
-  if (editing) showToast('Drag overlay buttons to reposition. Toggle off when done.', 3500);
+  if (editing) {
+    // Close the settings panel so the user can see the whole overlay.
+    ui.close();
+    settingsBtn.setAttribute('aria-expanded', 'false');
+    if (!doneEditBtn) {
+      doneEditBtn = document.createElement('button');
+      doneEditBtn.id = 'done-edit-btn';
+      doneEditBtn.type = 'button';
+      doneEditBtn.textContent = '✓ Done editing';
+      doneEditBtn.addEventListener('click', () => toggleTouchEdit());
+      wrapper.appendChild(doneEditBtn);
+    }
+    doneEditBtn.hidden = false;
+    showToast('Drag overlay buttons to reposition.', 2500);
+  } else if (doneEditBtn) {
+    doneEditBtn.hidden = true;
+  }
 }
 
 function doReset() {
@@ -235,8 +291,16 @@ window.addEventListener('gamepadconnected', () => {
 // React to fullscreen changes (the touch overlay layout doesn't change,
 // but the wrapper resizes, and we want to make sure the player keeps focus).
 document.addEventListener('fullscreenchange', () => {
+  fitPlayer();
   if (player) try { player.focus({ preventScroll: true }); } catch (_) {}
 });
+
+// Re-fit the player on wrapper resize (rotation, window resize).
+if (window.ResizeObserver) {
+  new ResizeObserver(() => fitPlayer()).observe(wrapper);
+} else {
+  window.addEventListener('resize', fitPlayer);
+}
 
 // Boot
 applyProfile();

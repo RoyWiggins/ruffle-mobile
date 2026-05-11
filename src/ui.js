@@ -48,12 +48,22 @@ export class SettingsUI {
     this.onReset = onReset;
     this.capturing = null; // { binding, rowEl } | null
 
+    this.displayAlign = panelEl.querySelector('#display-align');
     this.touchMode = panelEl.querySelector('#touch-mode');
     this.touchOpacity = panelEl.querySelector('#touch-opacity');
     this.touchEditBtn = panelEl.querySelector('#touch-edit-btn');
     this.bindingsList = panelEl.querySelector('#bindings-list');
     this.resetBtn = panelEl.querySelector('#reset-profile-btn');
     this.closeBtn = panelEl.querySelector('#settings-close');
+
+    this.displayAlign.addEventListener('change', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      p.profile.display = p.profile.display || {};
+      p.profile.display.align = this.displayAlign.value;
+      this.saveProfile();
+      this.onChange?.();
+    });
 
     this.touchMode.addEventListener('change', () => {
       const p = this.getProfile();
@@ -93,6 +103,7 @@ export class SettingsUI {
   refresh() {
     const p = this.getProfile();
     if (!p) return;
+    this.displayAlign.value = p.profile.display?.align || 'auto';
     this.touchMode.value = p.profile.touch.enabled || 'auto';
     this.touchOpacity.value = String(p.profile.touch.opacity ?? 0.6);
     this._renderBindings();
