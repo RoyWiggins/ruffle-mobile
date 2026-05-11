@@ -62,6 +62,9 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   outline: none;
   overflow: hidden;
   touch-action: none;
+  /* Touch overlay items size themselves with cqmin (% of smaller wrapper
+     dimension) so the d-pad stays large enough in portrait. */
+  container-type: size;
 }
 #ruffle-host { width: 100%; height: 100%; display: flex; }
 #ruffle-host > * { width: 100% !important; height: 100% !important; }
@@ -136,19 +139,27 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 }
 .touch-dpad .arrow {
   position: absolute;
-  color: rgba(255,255,255,0.65);
-  font-size: 1.6em;
+  color: rgba(255,255,255,0.55);
+  font-size: 22cqmin; /* scales with wrapper, like the d-pad itself */
+  font-size: clamp(18px, 22cqmin, 48px);
   pointer-events: none;
   line-height: 1;
+  padding: 4cqmin;
+  border-radius: 999px;
+  transition: background 0.05s, color 0.05s;
 }
-.touch-dpad .arrow.up    { top: 6%;    left: 50%; transform: translate(-50%, 0); }
-.touch-dpad .arrow.down  { bottom: 6%; left: 50%; transform: translate(-50%, 0); }
-.touch-dpad .arrow.left  { left: 6%;   top: 50%; transform: translate(0, -50%); }
-.touch-dpad .arrow.right { right: 6%;  top: 50%; transform: translate(0, -50%); }
-.touch-dpad.dir-up    .arrow.up    { color: #fff; text-shadow: 0 0 8px #fff; }
-.touch-dpad.dir-down  .arrow.down  { color: #fff; text-shadow: 0 0 8px #fff; }
-.touch-dpad.dir-left  .arrow.left  { color: #fff; text-shadow: 0 0 8px #fff; }
-.touch-dpad.dir-right .arrow.right { color: #fff; text-shadow: 0 0 8px #fff; }
+.touch-dpad .arrow.up    { top: 2%;    left: 50%; transform: translate(-50%, 0); }
+.touch-dpad .arrow.down  { bottom: 2%; left: 50%; transform: translate(-50%, 0); }
+.touch-dpad .arrow.left  { left: 2%;   top: 50%; transform: translate(0, -50%); }
+.touch-dpad .arrow.right { right: 2%;  top: 50%; transform: translate(0, -50%); }
+.touch-dpad.dir-up    .arrow.up,
+.touch-dpad.dir-down  .arrow.down,
+.touch-dpad.dir-left  .arrow.left,
+.touch-dpad.dir-right .arrow.right {
+  color: #fff;
+  background: var(--accent);
+  text-shadow: 0 0 8px rgba(255,255,255,0.6);
+}
 
 #touch-overlay.editing .touch-item {
   outline: 2px dashed var(--accent);

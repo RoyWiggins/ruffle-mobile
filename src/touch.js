@@ -106,7 +106,9 @@ export class TouchOverlay {
   _positionItem(el, item) {
     el.style.left = (item.x * 100) + '%';
     el.style.top  = (item.y * 100) + '%';
-    el.style.width = (item.size * 100) + '%';
+    // Size is expressed as a fraction of the *smaller* wrapper dimension
+    // (via cqmin) so the d-pad stays usable in portrait orientation.
+    el.style.width = `calc(${item.size} * 100cqmin)`;
     el.style.aspectRatio = '1';
   }
 
