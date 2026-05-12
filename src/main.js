@@ -287,13 +287,23 @@ let muted = localStorage.getItem('fcp:muted') === '1';
 let savedVolume = 1;
 function applyMute() {
   if (!player) return;
-  try {
-    if (muted) {
+  if (muted) {
+    try {
       const v = player.volume;
       if (typeof v === 'number' && v > 0) savedVolume = v;
-      player.volume = 0;
-    } else {
-      player.volume = savedVolume || 1;
+    } catch (_) {}
+  }
+  const target = muted ? 0 : (savedVolume || 1);
+  // Ruffle's public API has used different shapes across versions; try them all.
+  try { player.volume = target; } catch (_) {}
+  try { player.setVolume?.(target); } catch (_) {}
+  try { player.set_volume?.(target); } catch (_) {}
+  // As a last resort, suspend/resume the AudioContext Ruffle is using.
+  try {
+    const ctx = player.audioContext || player.getAudioContext?.();
+    if (ctx) {
+      if (muted) ctx.suspend?.();
+      else       ctx.resume?.();
     }
   } catch (_) {}
 }
