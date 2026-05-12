@@ -209,13 +209,23 @@ function fitPlayer() {
   const fitMode = currentProfile.profile.display?.fitMode || 'aspect';
 
   let w, h;
-  if (fitMode === 'fill' || !swfDimensions) {
+  if (fitMode === 'fill') {
     w = hw; h = hh;
   } else {
-    const ga = swfDimensions.width / swfDimensions.height;
-    const ha = hw / hh;
-    if (ga > ha) { w = hw; h = w / ga; }
-    else         { h = hh; w = h * ga; }
+    let aspect = null;
+    if (fitMode === 'custom') {
+      const c = currentProfile.profile.display?.customAspect;
+      if (c && c.width > 0 && c.height > 0) aspect = c.width / c.height;
+    }
+    if (aspect == null) {
+      if (!swfDimensions) { w = hw; h = hh; }
+      else aspect = swfDimensions.width / swfDimensions.height;
+    }
+    if (aspect != null) {
+      const ha = hw / hh;
+      if (aspect > ha) { w = hw; h = w / aspect; }
+      else             { h = hh; w = h * aspect; }
+    }
   }
   w *= zoom; h *= zoom;
   player.style.width = w + 'px';

@@ -61,7 +61,11 @@ export function defaultProfile() {
         // 'fill'   = size the player to the host area; Ruffle handles
         //            internal scaling. Useful for SWFs whose declared stage
         //            misrepresents the drawing area (e.g. Canabalt).
+        // 'custom' = use the customAspect WxH below as the player aspect.
         fitMode: 'aspect',
+        // Used when fitMode === 'custom'. Width and height are unitless —
+        // only the ratio matters.
+        customAspect: { width: 640, height: 480 },
         // NB: reservedBottom is global (in localStorage 'fcp:reservedBottom'),
         // not per-profile — it describes a device preference rather than a
         // per-game setting.

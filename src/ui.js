@@ -53,6 +53,9 @@ export class SettingsUI {
 
     this.displayAlign = panelEl.querySelector('#display-align');
     this.fitMode = panelEl.querySelector('#fit-mode');
+    this.customAspectRow = panelEl.querySelector('#custom-aspect-row');
+    this.customAspectW = panelEl.querySelector('#custom-aspect-w');
+    this.customAspectH = panelEl.querySelector('#custom-aspect-h');
     this.reservedBottom = panelEl.querySelector('#reserved-bottom');
     this.reservedBottomValue = panelEl.querySelector('#reserved-bottom-value');
     this.zoom = panelEl.querySelector('#zoom');
@@ -81,9 +84,25 @@ export class SettingsUI {
       if (!p) return;
       p.profile.display = p.profile.display || {};
       p.profile.display.fitMode = this.fitMode.value;
+      this.customAspectRow.hidden = this.fitMode.value !== 'custom';
       this.saveProfile();
       this.onChange?.();
     });
+
+    const onCustomAspectInput = () => {
+      const p = this.getProfile();
+      if (!p) return;
+      p.profile.display = p.profile.display || {};
+      const c = p.profile.display.customAspect = p.profile.display.customAspect || { width: 640, height: 480 };
+      const w = Number(this.customAspectW.value);
+      const h = Number(this.customAspectH.value);
+      if (w > 0) c.width = w;
+      if (h > 0) c.height = h;
+      this.saveProfile();
+      this.onChange?.();
+    };
+    this.customAspectW.addEventListener('input', onCustomAspectInput);
+    this.customAspectH.addEventListener('input', onCustomAspectInput);
 
     this.reservedBottom.addEventListener('input', () => {
       const v = Number(this.reservedBottom.value);
@@ -161,6 +180,10 @@ export class SettingsUI {
     if (!p) return;
     this.displayAlign.value = p.profile.display?.align || 'auto';
     this.fitMode.value = p.profile.display?.fitMode || 'aspect';
+    this.customAspectRow.hidden = this.fitMode.value !== 'custom';
+    const ca = p.profile.display?.customAspect || { width: 640, height: 480 };
+    this.customAspectW.value = String(ca.width);
+    this.customAspectH.value = String(ca.height);
     const reserved = this.getReservedBottom(this.getOrientation());
     this.reservedBottom.value = String(reserved);
     this.reservedBottomValue.textContent = Math.round(reserved * 100) + '%';

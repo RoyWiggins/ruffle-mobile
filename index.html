@@ -58,8 +58,17 @@
         Fit
         <select id="fit-mode">
           <option value="aspect">SWF aspect ratio</option>
+          <option value="custom">Custom aspect</option>
           <option value="fill">Fill (let Ruffle scale)</option>
         </select>
+      </label>
+      <label id="custom-aspect-row" hidden>
+        Custom W : H
+        <span>
+          <input type="number" id="custom-aspect-w" min="1" max="9999" step="1" style="width:5em" />
+          :
+          <input type="number" id="custom-aspect-h" min="1" max="9999" step="1" style="width:5em" />
+        </span>
       </label>
       <label>
         Reserved bottom <span id="reserved-bottom-value" class="hint" style="min-width:3em;text-align:right"></span>
