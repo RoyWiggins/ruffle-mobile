@@ -44,6 +44,8 @@ const ui = new SettingsUI({
   onTouchEdit: toggleTouchEdit,
   onReset: doReset,
   getOrientation: currentOrientation,
+  getReservedBottom: (o) => globalReserved[o] || 0,
+  setReservedBottom,
 });
 
 function getCurrentProfile() { return currentProfile; }
@@ -163,10 +165,23 @@ function getDisplayOffset() {
 }
 
 function getReservedBottom() {
-  const r = currentProfile.profile.display?.reservedBottom;
-  if (!r) return 0;
-  return clamp01(r[currentOrientation()] || 0);
+  return clamp01(globalReserved[currentOrientation()] || 0);
 }
+
+function setReservedBottom(orientation, value) {
+  globalReserved[orientation] = clamp01(value);
+  try { localStorage.setItem('fcp:reservedBottom', JSON.stringify(globalReserved)); } catch (_) {}
+  fitPlayer();
+}
+
+let globalReserved = (() => {
+  try {
+    const raw = localStorage.getItem('fcp:reservedBottom');
+    if (!raw) return { portrait: 0, landscape: 0 };
+    const v = JSON.parse(raw);
+    return { portrait: Number(v.portrait) || 0, landscape: Number(v.landscape) || 0 };
+  } catch (_) { return { portrait: 0, landscape: 0 }; }
+})();
 
 function clamp01(v) { return Math.max(0, Math.min(0.9, v || 0)); }
 
