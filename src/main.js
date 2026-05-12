@@ -210,18 +210,7 @@ function fitPlayer() {
 
   let w, h;
   if (fitMode === 'fill') {
-    // Always give the SWF at least a landscape-shaped canvas. In a portrait
-    // wrapper, "fill the wrapper" would give a tall/narrow stage —
-    // responsive games (e.g. Canabalt) then draw a narrow playfield. Use
-    // the larger of the wrapper's own aspect and the screen's landscape
-    // aspect so the canvas stays wide either way.
-    const screenW = window.screen?.width || hw;
-    const screenH = window.screen?.height || hh;
-    const landscapeA = Math.max(screenW, screenH) / Math.max(1, Math.min(screenW, screenH));
-    const wrapperA = hw / hh;
-    const aspect = Math.max(wrapperA, landscapeA);
-    if (aspect > wrapperA) { w = hw; h = w / aspect; }
-    else                   { h = hh; w = h * aspect; }
+    w = hw; h = hh;
   } else {
     let aspect = null;
     if (fitMode === 'custom') {
