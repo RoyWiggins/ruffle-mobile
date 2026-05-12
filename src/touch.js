@@ -110,9 +110,10 @@ export class TouchOverlay {
   _positionItem(el, item) {
     el.style.left = (item.x * 100) + '%';
     el.style.top  = (item.y * 100) + '%';
-    // Size is expressed as a fraction of the *smaller* wrapper dimension
-    // (via cqmin) so the d-pad stays usable in portrait orientation.
-    el.style.width = `calc(${item.size} * 100cqmin)`;
+    // Size is a fraction of the screen's smaller dimension (CSS var set in
+    // main.js), so fullscreen doesn't grow the d-pad and buttons. Falls back
+    // to wrapper cqmin if the variable isn't set.
+    el.style.width = `calc(${item.size} * var(--touch-base, 100cqmin))`;
     el.style.aspectRatio = '1';
   }
 

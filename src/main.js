@@ -23,6 +23,7 @@ const inputModeEl   = document.getElementById('input-mode');
 const settingsBtn   = document.getElementById('settings-btn');
 const settingsPanel = document.getElementById('settings-panel');
 const fullscreenBtn = document.getElementById('fullscreen-btn');
+const muteBtn = document.getElementById('mute-btn');
 
 let currentProfile = defaultProfile();
 let ruffleInstance = null;
@@ -120,9 +121,14 @@ async function loadSwfFromBuffer(buf, label) {
   ruffleHost.innerHTML = '';
   ruffleHost.appendChild(player);
 
-  await player.load({ data: buf, letterbox: 'off' });
+  await player.load({
+    data: buf,
+    letterbox: 'off',
+    contextMenu: 'off', // never show Ruffle's right-click / long-press menu
+  });
   wrapper.classList.add('has-swf');
   input.setHost(player);
+  applyMute();
   fitPlayer();
 
   try { player.focus({ preventScroll: true }); } catch (_) {}
@@ -244,7 +250,7 @@ settingsPanel.querySelector('#settings-close').addEventListener('click', () => {
 let pausedByUI = false;
 function applyAutoPause() {
   if (!player) return;
-  const want = !settingsPanel.hidden || touch.editing;
+  const want = !settingsPanel.hidden || touch.editing || document.hidden;
   if (want && !pausedByUI) {
     try { player.pause?.(); pausedByUI = true; } catch (_) {}
   } else if (!want && pausedByUI) {
@@ -252,6 +258,7 @@ function applyAutoPause() {
     pausedByUI = false;
   }
 }
+document.addEventListener('visibilitychange', applyAutoPause);
 
 fullscreenBtn.addEventListener('click', () => {
   // Fullscreen the wrapper so the touch overlay stays visible over the player.
@@ -261,6 +268,38 @@ fullscreenBtn.addEventListener('click', () => {
     wrapper.requestFullscreen?.();
   }
 });
+
+// Audio mute, persisted in localStorage so it survives reloads.
+let muted = localStorage.getItem('fcp:muted') === '1';
+let savedVolume = 1;
+function applyMute() {
+  if (!player) return;
+  try {
+    if (muted) {
+      const v = player.volume;
+      if (typeof v === 'number' && v > 0) savedVolume = v;
+      player.volume = 0;
+    } else {
+      player.volume = savedVolume || 1;
+    }
+  } catch (_) {}
+}
+function refreshMuteBtn() {
+  muteBtn.textContent = muted ? '🔇' : '🔊';
+  muteBtn.setAttribute('aria-pressed', String(muted));
+  muteBtn.title = muted ? 'Unmute audio' : 'Mute audio';
+}
+muteBtn.addEventListener('click', () => {
+  muted = !muted;
+  try { localStorage.setItem('fcp:muted', muted ? '1' : '0'); } catch (_) {}
+  applyMute();
+  refreshMuteBtn();
+});
+refreshMuteBtn();
+
+// Belt-and-braces: even with Ruffle's contextMenu config off, suppress the
+// browser's own right-click / long-press menu inside the player wrapper.
+wrapper.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
 let doneEditBtn = null;
 let gameScrim = null;
@@ -368,6 +407,21 @@ document.addEventListener('fullscreenchange', () => {
   fitPlayer();
   if (player) try { player.focus({ preventScroll: true }); } catch (_) {}
 });
+
+// --touch-base: the screen's smaller dimension. Touch items size themselves
+// off of this rather than the wrapper, so going fullscreen (which enlarges
+// the wrapper) doesn't grow the d-pad and buttons.
+function updateTouchBase() {
+  const s = window.screen || {};
+  const base = Math.min(
+    s.width  || window.innerWidth,
+    s.height || window.innerHeight,
+  );
+  document.documentElement.style.setProperty('--touch-base', base + 'px');
+}
+updateTouchBase();
+window.addEventListener('resize', updateTouchBase);
+window.addEventListener('orientationchange', updateTouchBase);
 
 // Re-fit the player on wrapper resize (rotation, window resize), and
 // re-render the touch overlay when the orientation flips so it uses the
