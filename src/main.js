@@ -230,11 +230,28 @@ settingsBtn.addEventListener('click', () => {
   if (settingsPanel.hidden) ui.open();
   else ui.close();
   settingsBtn.setAttribute('aria-expanded', String(!settingsPanel.hidden));
+  applyAutoPause();
 });
 settingsPanel.querySelector('#settings-close').addEventListener('click', () => {
   ui.close();
   settingsBtn.setAttribute('aria-expanded', 'false');
+  applyAutoPause();
 });
+
+// Pause Ruffle while the user is in the settings panel or editing the touch
+// layout. We track our own pause state so we don't fight with whatever Ruffle
+// is doing on its own (e.g. a click-to-play overlay before first interaction).
+let pausedByUI = false;
+function applyAutoPause() {
+  if (!player) return;
+  const want = !settingsPanel.hidden || touch.editing;
+  if (want && !pausedByUI) {
+    try { player.pause?.(); pausedByUI = true; } catch (_) {}
+  } else if (!want && pausedByUI) {
+    try { player.play?.(); } catch (_) {}
+    pausedByUI = false;
+  }
+}
 
 fullscreenBtn.addEventListener('click', () => {
   // Fullscreen the wrapper so the touch overlay stays visible over the player.
@@ -301,6 +318,7 @@ function toggleTouchEdit() {
     if (gameScrim) gameScrim.hidden = true;
     if (doneEditBtn) doneEditBtn.hidden = true;
   }
+  applyAutoPause();
 }
 
 function doReset() {
