@@ -98,10 +98,22 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 #ruffle-host > * { display: block; flex: 0 0 auto; }
 #empty-state {
   position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
   color: var(--muted); pointer-events: none;
   font-size: 1.05em;
+  gap: 0.5em;
 }
+#empty-state > * { pointer-events: auto; }
+#empty-state p { margin: 0; }
+#demo-btn {
+  background: var(--accent); color: var(--accent-fg);
+  padding: 0.9em 1.6em; border-radius: 999px;
+  font-size: 1.15em; font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  cursor: pointer;
+}
+#demo-btn:hover { filter: brightness(1.1); }
 #player-wrapper.has-swf #empty-state { display: none; }
 #player-wrapper.drag-over { outline: 3px dashed var(--accent); outline-offset: -8px; }
 

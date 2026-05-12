@@ -18,6 +18,7 @@ const toast         = document.getElementById('toast');
 const fileInput     = document.getElementById('file-input');
 const urlInput      = document.getElementById('url-input');
 const loadUrlBtn    = document.getElementById('load-url-btn');
+const demoBtn       = document.getElementById('demo-btn');
 const loaderEl     = document.getElementById('loader');
 const currentSwfEl = document.getElementById('current-swf');
 const swfNameEl    = currentSwfEl.querySelector('.swf-name');
@@ -360,6 +361,15 @@ refreshMuteBtn();
 wrapper.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
 currentSwfEl.addEventListener('click', () => clearSwf());
+
+demoBtn?.addEventListener('click', async () => {
+  demoBtn.disabled = true;
+  try {
+    await loadFromUrl(new URL('demos/ezplatformer.swf', document.baseURI).toString());
+  } finally {
+    demoBtn.disabled = false;
+  }
+});
 
 function clearSwf() {
   if (player) {
