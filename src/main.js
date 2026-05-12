@@ -137,6 +137,8 @@ async function loadSwfFromBuffer(buf, label) {
     data: buf,
     letterbox: 'off',
     contextMenu: 'off', // never show Ruffle's right-click / long-press menu
+    autoplay: 'on',     // user already clicked Open/Demo — skip click-to-play
+    unmuteOverlay: 'hidden',
   });
   wrapper.classList.add('has-swf');
   input.setHost(player);
