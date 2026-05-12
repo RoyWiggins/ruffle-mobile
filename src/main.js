@@ -569,6 +569,14 @@ if (window.ResizeObserver) {
 applyProfile();
 applyTouchVisibility();
 gp.start();
+
+// Service worker patches dead CDN dependencies in old SWFs (e.g. Neopets
+// games that loadMovie a now-503ing high-scores wrapper). Only runs on
+// HTTPS / localhost — silent no-op elsewhere.
+if ('serviceWorker' in navigator) {
+  const swUrl = new URL('sw.js', document.baseURI).toString();
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
 ensureRuffle().catch(err => {
   console.error(err);
   showToast('Ruffle failed to load: ' + err.message, 5000);
