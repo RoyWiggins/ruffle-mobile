@@ -397,10 +397,14 @@ wrapper.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
 currentSwfEl.addEventListener('click', () => clearSwf());
 
+const emptyStateEl = document.getElementById('empty-state');
 demoBtn?.addEventListener('click', async () => {
   demoBtn.disabled = true;
+  if (emptyStateEl) emptyStateEl.hidden = true;
   try {
     await loadFromUrl(new URL('demos/ezplatformer.swf', document.baseURI).toString());
+  } catch (_) {
+    if (emptyStateEl) emptyStateEl.hidden = false;
   } finally {
     demoBtn.disabled = false;
   }
