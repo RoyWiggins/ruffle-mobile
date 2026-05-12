@@ -54,6 +54,8 @@ export class SettingsUI {
     this.displayAlign = panelEl.querySelector('#display-align');
     this.reservedBottom = panelEl.querySelector('#reserved-bottom');
     this.reservedBottomValue = panelEl.querySelector('#reserved-bottom-value');
+    this.zoom = panelEl.querySelector('#zoom');
+    this.zoomValue = panelEl.querySelector('#zoom-value');
     this.rightStickMode = panelEl.querySelector('#right-stick-mode');
     this.rightStickRadius = panelEl.querySelector('#right-stick-radius');
     this.rightStickRadiusValue = panelEl.querySelector('#right-stick-radius-value');
@@ -77,6 +79,17 @@ export class SettingsUI {
       const v = Number(this.reservedBottom.value);
       this.reservedBottomValue.textContent = Math.round(v * 100) + '%';
       this.setReservedBottom(this.getOrientation(), v);
+    });
+
+    this.zoom.addEventListener('input', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const v = Number(this.zoom.value);
+      p.profile.display = p.profile.display || {};
+      p.profile.display.zoom = v;
+      this.zoomValue.textContent = v.toFixed(2) + '×';
+      this.saveProfile();
+      this.onChange?.();
     });
 
     this.rightStickMode.addEventListener('change', () => {
@@ -140,6 +153,9 @@ export class SettingsUI {
     const reserved = this.getReservedBottom(this.getOrientation());
     this.reservedBottom.value = String(reserved);
     this.reservedBottomValue.textContent = Math.round(reserved * 100) + '%';
+    const zoom = p.profile.display?.zoom ?? 1.0;
+    this.zoom.value = String(zoom);
+    this.zoomValue.textContent = Number(zoom).toFixed(2) + '×';
     const rs = p.profile.axes?.right_stick || {};
     this.rightStickMode.value = rs.mode || 'off';
     const r = rs.radius ?? 1.2;

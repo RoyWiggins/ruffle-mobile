@@ -53,6 +53,10 @@ export function defaultProfile() {
           portrait:  { dx: 0, dy: 0 },
           landscape: { dx: 0, dy: 0 },
         },
+        // Multiplier applied on top of the aspect-ratio fit. 1.0 = fit; <1
+        // shrinks (useful for games whose declared stage doesn't match what
+        // they draw); >1 zooms in.
+        zoom: 1.0,
         // NB: reservedBottom is global (in localStorage 'fcp:reservedBottom'),
         // not per-profile — it describes a device preference rather than a
         // per-game setting.

@@ -216,6 +216,8 @@ function fitPlayer() {
   let w, h;
   if (ga > ha) { w = hw; h = w / ga; }
   else         { h = hh; w = h * ga; }
+  const zoom = Math.max(0.25, Math.min(4, currentProfile.profile.display?.zoom ?? 1));
+  w *= zoom; h *= zoom;
   player.style.width = w + 'px';
   player.style.height = h + 'px';
 
