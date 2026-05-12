@@ -1,21 +1,27 @@
-// Service worker that patches dead third-party SWF dependencies.
+// Service worker that patches dead / CORS-blocked third-party SWF deps.
 //
 // Some old Flash games (e.g. Neopets pterattack) loadMovie() helpers from
-// CDNs that have since gone dark. The game's main timeline stays stop()'d
-// waiting forever for an asset that 503s, leaving a black screen.
+// CDNs that either no longer respond or never sent CORS headers — both
+// fatal when the game runs on a third-party origin in Ruffle.
 //
-// Intercept those specific URLs and serve a tiny local stub SWF — the byte
-// count comparison in the game's "is the dependency loaded" check then
-// passes immediately and the main timeline advances.
+// We serve hand-built local stub SWFs that satisfy the structural checks
+// the game performs (byte-loaded gate, a _parent._parent.play() call) so
+// no actual cross-origin fetch is needed.
 
-const STUB_PATH = new URL('demos/neopets-include-stub.swf', self.registration.scope).pathname;
+const SCOPE = self.registration.scope;
+const STUB_INCLUDE = new URL('demos/neopets-include-stub.swf', SCOPE).pathname;
+const STUB_BIOS    = new URL('demos/neopets-bios-stub.swf',    SCOPE).pathname;
 
 const PATCHES = [
-  // Neopets games — the Flash "bios" liveBios path loadMovieNum's an include
-  // wrapper from one of two URLs depending on the game's bios SDK version.
-  // Both endpoints now 503; serve the local stub for either.
-  { re: /\/games\/gaming_system\/np6_include_v1\.swf(?:[?#].*)?$/i, target: STUB_PATH },
-  { re: /\/games\/high_scores\/include_movie\.swf(?:[?#].*)?$/i,    target: STUB_PATH },
+  // Neopets "live bios" loader. Real bios.swf still returns 200 from
+  // swf.neopets.com but lacks CORS headers — Ruffle's fetch fails. Our 71-
+  // byte stub just runs `_parent._parent.play()` on frame 1, which is the
+  // only action the real bios's finishBios() ultimately takes.
+  { re: /\/\/swf\.neopets\.com\/games\/utilities\/flash_bios\/bios\.swf/i, target: STUB_BIOS },
+  // High-score / include wrappers — both endpoints now 503. Serve the
+  // 28-byte include stub so the byte-count load gate passes.
+  { re: /\/games\/gaming_system\/np6_include_v1\.swf(?:[?#].*)?$/i, target: STUB_INCLUDE },
+  { re: /\/games\/high_scores\/include_movie\.swf(?:[?#].*)?$/i,    target: STUB_INCLUDE },
 ];
 
 self.addEventListener('install', () => self.skipWaiting());
