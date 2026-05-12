@@ -210,33 +210,66 @@ function fitPlayer() {
   const zoom = Math.max(0.25, Math.min(4, currentProfile.profile.display?.zoom ?? 1));
   const fitMode = currentProfile.profile.display?.fitMode || 'aspect';
 
-  let w, h;
-  if (fitMode === 'fill') {
-    w = hw; h = hh;
-  } else {
-    let aspect = null;
-    if (fitMode === 'custom') {
-      const c = currentProfile.profile.display?.customAspect;
-      if (c && c.width > 0 && c.height > 0) aspect = c.width / c.height;
-    }
-    if (aspect == null) {
-      if (!swfDimensions) { w = hw; h = hh; }
-      else aspect = swfDimensions.width / swfDimensions.height;
-    }
-    if (aspect != null) {
+  // Without a parsed SWF size we can't size the canvas natively; fall back
+  // to letting Ruffle fill the host. (Custom and Fill modes also don't need
+  // the native-canvas trick — they're explicit about wanting Ruffle to
+  // scale.)
+  const useNative = swfDimensions && fitMode === 'aspect';
+  if (!useNative) {
+    let w, h;
+    if (fitMode === 'fill' || !swfDimensions) {
+      w = hw; h = hh;
+    } else {
+      let aspect = swfDimensions ? swfDimensions.width / swfDimensions.height : 1;
+      if (fitMode === 'custom') {
+        const c = currentProfile.profile.display?.customAspect;
+        if (c && c.width > 0 && c.height > 0) aspect = c.width / c.height;
+      }
       const ha = hw / hh;
       if (aspect > ha) { w = hw; h = w / aspect; }
       else             { h = hh; w = h * aspect; }
     }
+    w *= zoom; h *= zoom;
+    player.style.position = '';
+    player.style.top = '';
+    player.style.left = '';
+    player.style.width = w + 'px';
+    player.style.height = h + 'px';
+    player.style.transform = '';
+    player.style.transformOrigin = '';
+    const off = getDisplayOffset();
+    const tx = off.dx * hw;
+    const ty = off.dy * hh;
+    player.style.translate = tx || ty ? `${tx}px ${ty}px` : '';
+    return;
   }
-  w *= zoom; h *= zoom;
-  player.style.width = w + 'px';
-  player.style.height = h + 'px';
 
+  // Native-canvas path: keep the canvas at the SWF's declared pixel size and
+  // use a CSS transform for visual fit. Critical for SWFs that set
+  // Stage.scaleMode = NO_SCALE (e.g. Flixel games like EZPlatformer) — those
+  // read stage.stageWidth and base their own scaling on it, so the canvas
+  // must report the SWF's intended dimensions.
+  const sw = swfDimensions.width;
+  const sh = swfDimensions.height;
+  player.style.position = 'absolute';
+  player.style.top = '0';
+  player.style.left = '0';
+  player.style.width = sw + 'px';
+  player.style.height = sh + 'px';
+  const fit = Math.min(hw / sw, hh / sh) * zoom;
+  const vw = sw * fit;
+  const vh = sh * fit;
+  let topPx;
+  if (align === 'top') topPx = 0;
+  else if (align === 'bottom') topPx = hh - vh;
+  else topPx = (hh - vh) / 2;
+  const leftPx = (hw - vw) / 2;
   const off = getDisplayOffset();
-  const tx = off.dx * hw;
-  const ty = off.dy * hh;
-  player.style.translate = tx || ty ? `${tx}px ${ty}px` : '';
+  const tx = leftPx + off.dx * hw;
+  const ty = topPx  + off.dy * hh;
+  player.style.transformOrigin = 'top left';
+  player.style.transform = `translate(${tx}px, ${ty}px) scale(${fit})`;
+  player.style.translate = '';
 }
 
 async function loadFromFile(file) {
