@@ -46,6 +46,12 @@ export function defaultProfile() {
       display: {
         // 'auto' = top in portrait, center in landscape.
         align: 'auto',
+        // Additional per-orientation offset, in fractions of the wrapper.
+        // Set in edit mode by dragging the game.
+        offsets: {
+          portrait:  { dx: 0, dy: 0 },
+          landscape: { dx: 0, dy: 0 },
+        },
       },
     },
     detected: null,
@@ -53,17 +59,18 @@ export function defaultProfile() {
 }
 
 export function defaultTouchLayout() {
-  // Coordinates are 0–1 fractions of the wrapper. Sizes are 0–1 fractions of
-  // the *smaller* wrapper dimension (cqmin) so the layout stays usable in
-  // portrait orientation.
+  // Coordinates are 0–1 fractions of the wrapper (item center).
+  // Sizes are 0–1 fractions of the smaller wrapper dimension (cqmin) so the
+  // layout stays usable in portrait orientation.
+  // ABXY is laid out in Xbox-style diamond: Y top, A bottom, X left, B right.
   return [
-    { id: 'dpad',     type: 'dpad',   x: 0.18, y: 0.74, size: 0.32 },
-    { id: 'button_a', type: 'button', x: 0.88, y: 0.82, size: 0.14, label: 'A', binding: 'button_a' },
-    { id: 'button_b', type: 'button', x: 0.72, y: 0.78, size: 0.14, label: 'B', binding: 'button_b' },
-    { id: 'button_x', type: 'button', x: 0.72, y: 0.92, size: 0.14, label: 'X', binding: 'button_x' },
-    { id: 'button_y', type: 'button', x: 0.88, y: 0.66, size: 0.14, label: 'Y', binding: 'button_y' },
-    { id: 'start',    type: 'button', x: 0.56, y: 0.96, size: 0.08, label: '▶', binding: 'start' },
-    { id: 'select',   type: 'button', x: 0.44, y: 0.96, size: 0.08, label: '⦿', binding: 'select' },
+    { id: 'dpad',     type: 'dpad',   x: 0.20, y: 0.72, size: 0.30 },
+    { id: 'button_y', type: 'button', x: 0.78, y: 0.62, size: 0.13, label: 'Y', binding: 'button_y' },
+    { id: 'button_x', type: 'button', x: 0.66, y: 0.72, size: 0.13, label: 'X', binding: 'button_x' },
+    { id: 'button_b', type: 'button', x: 0.90, y: 0.72, size: 0.13, label: 'B', binding: 'button_b' },
+    { id: 'button_a', type: 'button', x: 0.78, y: 0.82, size: 0.13, label: 'A', binding: 'button_a' },
+    { id: 'start',    type: 'button', x: 0.56, y: 0.93, size: 0.07, label: '▶', binding: 'start' },
+    { id: 'select',   type: 'button', x: 0.44, y: 0.93, size: 0.07, label: '⦿', binding: 'select' },
   ];
 }
 

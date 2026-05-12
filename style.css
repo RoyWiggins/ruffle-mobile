@@ -110,6 +110,21 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   font-size: 0.95em; font-weight: 600;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
+#game-drag-scrim {
+  position: absolute; inset: 0;
+  background: rgba(74, 158, 255, 0.08);
+  border: 2px dashed rgba(255,255,255,0.25);
+  z-index: 4; /* below touch-overlay (5), above ruffle host */
+  cursor: move;
+  touch-action: none;
+}
+#game-drag-scrim::after {
+  content: "Drag to shift game";
+  position: absolute; top: 3.5em; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.65); color: white;
+  padding: 0.35em 0.8em; border-radius: 999px;
+  font-size: 0.8em; pointer-events: none;
+}
 .touch-item {
   position: absolute;
   pointer-events: auto;
@@ -118,6 +133,9 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   -webkit-touch-callout: none;
   touch-action: none;
   transform: translate(-50%, -50%);
+  /* So children can size themselves as a fraction of this item, not the
+     whole player wrapper. */
+  container-type: size;
 }
 .touch-button {
   background: rgba(80,80,90,0.45);
@@ -125,7 +143,9 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   color: white;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 48cqmin;
+  line-height: 1;
   text-shadow: 0 1px 2px rgba(0,0,0,0.7);
 }
 .touch-button.pressed {
@@ -133,40 +153,33 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   color: #111;
   text-shadow: none;
 }
-.touch-button.small { font-size: 0.85em; }
 
 .touch-dpad {
   background: rgba(80,80,90,0.3);
   border: 2px solid rgba(255,255,255,0.5);
   border-radius: 16px;
-  position: absolute;
-  pointer-events: auto;
-  touch-action: none;
-  transform: translate(-50%, -50%);
-  user-select: none;
 }
 .touch-dpad .arrow {
   position: absolute;
-  color: rgba(255,255,255,0.55);
-  font-size: 22cqmin; /* scales with wrapper, like the d-pad itself */
-  font-size: clamp(18px, 22cqmin, 48px);
+  color: rgba(255,255,255,0.6);
+  font-size: 28cqmin; /* % of the d-pad's own min dimension */
   pointer-events: none;
+  width: 30cqmin; height: 30cqmin;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
   line-height: 1;
-  padding: 4cqmin;
-  border-radius: 999px;
   transition: background 0.05s, color 0.05s;
 }
-.touch-dpad .arrow.up    { top: 2%;    left: 50%; transform: translate(-50%, 0); }
-.touch-dpad .arrow.down  { bottom: 2%; left: 50%; transform: translate(-50%, 0); }
-.touch-dpad .arrow.left  { left: 2%;   top: 50%; transform: translate(0, -50%); }
-.touch-dpad .arrow.right { right: 2%;  top: 50%; transform: translate(0, -50%); }
+.touch-dpad .arrow.up    { top: 5%;    left: 50%; transform: translate(-50%, 0); }
+.touch-dpad .arrow.down  { bottom: 5%; left: 50%; transform: translate(-50%, 0); }
+.touch-dpad .arrow.left  { left: 5%;   top: 50%; transform: translate(0, -50%); }
+.touch-dpad .arrow.right { right: 5%;  top: 50%; transform: translate(0, -50%); }
 .touch-dpad.dir-up    .arrow.up,
 .touch-dpad.dir-down  .arrow.down,
 .touch-dpad.dir-left  .arrow.left,
 .touch-dpad.dir-right .arrow.right {
   color: #fff;
   background: var(--accent);
-  text-shadow: 0 0 8px rgba(255,255,255,0.6);
 }
 
 #touch-overlay.editing .touch-item {

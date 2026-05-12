@@ -132,11 +132,27 @@ async function loadSwfFromBuffer(buf, label) {
   showToast(`Loaded · profile ${hash.slice(0, 8)}`);
 }
 
+function currentOrientation() {
+  return wrapper.clientHeight > wrapper.clientWidth ? 'portrait' : 'landscape';
+}
+
 function effectiveAlign() {
   const setting = currentProfile.profile.display?.align || 'auto';
   if (setting !== 'auto') return setting;
-  const portrait = wrapper.clientHeight > wrapper.clientWidth;
-  return portrait ? 'top' : 'center';
+  return currentOrientation() === 'portrait' ? 'top' : 'center';
+}
+
+function getDisplayOffset() {
+  const d = currentProfile.profile.display;
+  if (!d || !d.offsets) return { dx: 0, dy: 0 };
+  return d.offsets[currentOrientation()] || { dx: 0, dy: 0 };
+}
+
+function setDisplayOffset(dx, dy) {
+  const p = currentProfile.profile;
+  p.display = p.display || {};
+  p.display.offsets = p.display.offsets || {};
+  p.display.offsets[currentOrientation()] = { dx, dy };
 }
 
 function fitPlayer() {
@@ -146,9 +162,9 @@ function fitPlayer() {
   ruffleHost.classList.add('align-' + align);
 
   if (!swfDimensions) {
-    // No dimensions parsed — let the player fill the host.
     player.style.width = '100%';
     player.style.height = '100%';
+    player.style.translate = '';
     return;
   }
   const hw = ruffleHost.clientWidth;
@@ -161,6 +177,11 @@ function fitPlayer() {
   else         { h = hh; w = h * ga; }
   player.style.width = w + 'px';
   player.style.height = h + 'px';
+
+  const off = getDisplayOffset();
+  const tx = off.dx * hw;
+  const ty = off.dy * hh;
+  player.style.translate = tx || ty ? `${tx}px ${ty}px` : '';
 }
 
 async function loadFromFile(file) {
@@ -225,13 +246,47 @@ fullscreenBtn.addEventListener('click', () => {
 });
 
 let doneEditBtn = null;
+let gameScrim = null;
+
+function ensureGameScrim() {
+  if (gameScrim) return gameScrim;
+  const scrim = document.createElement('div');
+  scrim.id = 'game-drag-scrim';
+  scrim.hidden = true;
+  let drag = null;
+  scrim.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault();
+    try { scrim.setPointerCapture(ev.pointerId); } catch (_) {}
+    const off = getDisplayOffset();
+    drag = { px: ev.clientX, py: ev.clientY, dx0: off.dx, dy0: off.dy };
+  });
+  scrim.addEventListener('pointermove', (ev) => {
+    if (!drag) return;
+    const dx = drag.dx0 + (ev.clientX - drag.px) / wrapper.clientWidth;
+    const dy = drag.dy0 + (ev.clientY - drag.py) / wrapper.clientHeight;
+    setDisplayOffset(dx, dy);
+    fitPlayer();
+  });
+  const onUp = (ev) => {
+    if (!drag) return;
+    drag = null;
+    try { scrim.releasePointerCapture(ev.pointerId); } catch (_) {}
+    saveProfile(currentProfile);
+  };
+  scrim.addEventListener('pointerup', onUp);
+  scrim.addEventListener('pointercancel', onUp);
+  wrapper.appendChild(scrim);
+  gameScrim = scrim;
+  return scrim;
+}
+
 function toggleTouchEdit() {
   const editing = !touch.editing;
   touch.setEditing(editing);
   if (editing) {
-    // Close the settings panel so the user can see the whole overlay.
     ui.close();
     settingsBtn.setAttribute('aria-expanded', 'false');
+    ensureGameScrim().hidden = false;
     if (!doneEditBtn) {
       doneEditBtn = document.createElement('button');
       doneEditBtn.id = 'done-edit-btn';
@@ -241,9 +296,10 @@ function toggleTouchEdit() {
       wrapper.appendChild(doneEditBtn);
     }
     doneEditBtn.hidden = false;
-    showToast('Drag overlay buttons to reposition.', 2500);
-  } else if (doneEditBtn) {
-    doneEditBtn.hidden = true;
+    showToast('Drag the game or controls to reposition.', 2500);
+  } else {
+    if (gameScrim) gameScrim.hidden = true;
+    if (doneEditBtn) doneEditBtn.hidden = true;
   }
 }
 
