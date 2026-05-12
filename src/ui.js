@@ -1,7 +1,7 @@
 // Settings panel: per-binding key remapping, touch overlay options,
 // and "edit layout" toggle for the touch overlay.
 
-import { formatSpec, KEY_SPECS, specFromKeyboardEvent } from './keys.js';
+import { formatSpec, KEY_SPECS, MOUSE_SPECS, specFromKeyboardEvent } from './keys.js';
 
 const BINDING_GROUPS = [
   {
@@ -54,6 +54,9 @@ export class SettingsUI {
     this.displayAlign = panelEl.querySelector('#display-align');
     this.reservedBottom = panelEl.querySelector('#reserved-bottom');
     this.reservedBottomValue = panelEl.querySelector('#reserved-bottom-value');
+    this.rightStickMode = panelEl.querySelector('#right-stick-mode');
+    this.rightStickRadius = panelEl.querySelector('#right-stick-radius');
+    this.rightStickRadiusValue = panelEl.querySelector('#right-stick-radius-value');
     this.touchMode = panelEl.querySelector('#touch-mode');
     this.touchOpacity = panelEl.querySelector('#touch-opacity');
     this.touchEditBtn = panelEl.querySelector('#touch-edit-btn');
@@ -74,6 +77,25 @@ export class SettingsUI {
       const v = Number(this.reservedBottom.value);
       this.reservedBottomValue.textContent = Math.round(v * 100) + '%';
       this.setReservedBottom(this.getOrientation(), v);
+    });
+
+    this.rightStickMode.addEventListener('change', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const axes = p.profile.axes = p.profile.axes || {};
+      const rs = axes.right_stick = axes.right_stick || { deadzone: 0.18, radius: 1.2 };
+      rs.mode = this.rightStickMode.value;
+      this.saveProfile();
+      this.onChange?.();
+    });
+    this.rightStickRadius.addEventListener('input', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const axes = p.profile.axes = p.profile.axes || {};
+      const rs = axes.right_stick = axes.right_stick || { mode: 'off', deadzone: 0.18 };
+      rs.radius = Number(this.rightStickRadius.value);
+      this.rightStickRadiusValue.textContent = rs.radius.toFixed(2) + '×';
+      this.saveProfile();
     });
 
     this.touchMode.addEventListener('change', () => {
@@ -118,6 +140,11 @@ export class SettingsUI {
     const reserved = this.getReservedBottom(this.getOrientation());
     this.reservedBottom.value = String(reserved);
     this.reservedBottomValue.textContent = Math.round(reserved * 100) + '%';
+    const rs = p.profile.axes?.right_stick || {};
+    this.rightStickMode.value = rs.mode || 'off';
+    const r = rs.radius ?? 1.2;
+    this.rightStickRadius.value = String(r);
+    this.rightStickRadiusValue.textContent = Number(r).toFixed(2) + '×';
     this.touchMode.value = p.profile.touch.enabled || 'auto';
     this.touchOpacity.value = String(p.profile.touch.opacity ?? 0.6);
     this._renderBindings();
@@ -207,6 +234,7 @@ export class SettingsUI {
     picker.appendChild(header);
 
     const sections = [
+      { label: 'Mouse',   specs: [MOUSE_SPECS.MouseLeft, MOUSE_SPECS.MouseRight, MOUSE_SPECS.MouseMiddle] },
       { label: 'Arrows',  keys: ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'] },
       { label: 'Special', keys: ['Space', 'Enter', 'Escape', 'Tab', 'Backspace', 'Shift', 'Control', 'Alt'] },
       { label: 'Letters', keys: Array.from({ length: 26 }, (_, i) => 'Key' + String.fromCharCode(65 + i)) },
@@ -221,9 +249,8 @@ export class SettingsUI {
       sec.appendChild(h);
       const grid = document.createElement('div');
       grid.className = 'picker-grid';
-      for (const k of section.keys) {
-        const spec = KEY_SPECS[k];
-        if (!spec) continue;
+      const specs = section.specs || section.keys.map((k) => KEY_SPECS[k]).filter(Boolean);
+      for (const spec of specs) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.textContent = formatSpec(spec);

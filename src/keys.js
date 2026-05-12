@@ -29,26 +29,42 @@ for (let i = 0; i < 10; i++) {
   KEY_SPECS[`Digit${i}`] = { key: String(i), code: `Digit${i}`, keyCode: 48 + i };
 }
 
-// Build a normalized key id used to dedupe presses across different bindings
-// that produce the same physical key. Prefer `code` (layout-independent),
-// fall back to keyCode.
+// Mouse button specs. button = 0 (left), 1 (middle), 2 (right) — same as the
+// DOM MouseEvent.button values. Stored alongside keyboard specs in the
+// gamepad bindings.
+export const MOUSE_SPECS = {
+  MouseLeft:   { type: 'mouse', button: 0 },
+  MouseMiddle: { type: 'mouse', button: 1 },
+  MouseRight:  { type: 'mouse', button: 2 },
+};
+
+// Build a normalized id used to dedupe presses across different bindings
+// that produce the same physical key or mouse button. Prefer `code`
+// (layout-independent), fall back to keyCode.
 export function keyId(spec) {
   if (!spec) return null;
+  if (spec.type === 'mouse') return `mouse:${spec.button}`;
   return spec.code || `kc:${spec.keyCode}` || spec.key;
 }
 
-// Resolve a stored binding (one of: a key-spec object, a string spec name,
-// or null) into a fully-populated key spec, or null if unbound.
+// Resolve a stored binding (one of: a spec object, a string spec name from
+// KEY_SPECS or MOUSE_SPECS, or null) into a fully-populated spec, or null.
 export function resolveSpec(binding) {
   if (!binding) return null;
-  if (typeof binding === 'string') return KEY_SPECS[binding] || null;
-  if (typeof binding === 'object' && binding.keyCode != null) return binding;
+  if (typeof binding === 'string') return KEY_SPECS[binding] || MOUSE_SPECS[binding] || null;
+  if (typeof binding === 'object') {
+    if (binding.type === 'mouse' && typeof binding.button === 'number') return binding;
+    if (binding.keyCode != null) return binding;
+  }
   return null;
 }
 
-// Pretty-print a key spec for the UI.
+// Pretty-print a spec for the UI.
 export function formatSpec(spec) {
   if (!spec) return '—';
+  if (spec.type === 'mouse') {
+    return { 0: '🖱 Left', 1: '🖱 Middle', 2: '🖱 Right' }[spec.button] || '🖱';
+  }
   if (spec.code === 'Space') return 'Space';
   if (spec.code === 'Enter') return 'Enter';
   if (spec.code === 'Escape') return 'Esc';

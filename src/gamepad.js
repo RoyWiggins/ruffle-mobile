@@ -159,6 +159,20 @@ export class GamepadHandler {
       prev.stick = next;
     }
 
+    // Right stick → virtual mouse aim
+    const rcfg = profile.axes?.right_stick;
+    if (rcfg && rcfg.mode === 'mouse' && pad.axes.length >= 4) {
+      const dead = rcfg.deadzone ?? 0.18;
+      const radius = rcfg.radius ?? 1.2; // fraction of half the stage's smaller side
+      const x = pad.axes[2] ?? 0;
+      const y = pad.axes[3] ?? 0;
+      const mag = Math.hypot(x, y);
+      if (mag > dead) {
+        this.input.aimMouseAt(x, y, radius);
+        activity = true;
+      }
+    }
+
     this.state.set(pad.index, prev);
     return activity;
   }

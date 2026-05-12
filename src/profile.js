@@ -36,7 +36,8 @@ export function defaultProfile() {
         select: KEY_SPECS.Escape,
       },
       axes: {
-        left_stick: { mode: 'dpad', deadzone_enter: 0.5, deadzone_exit: 0.35 },
+        left_stick:  { mode: 'dpad',  deadzone_enter: 0.5, deadzone_exit: 0.35 },
+        right_stick: { mode: 'off',   deadzone: 0.18, radius: 1.2 },
       },
       touch: {
         enabled: 'auto',
@@ -137,6 +138,10 @@ function migrateInPlace(profile) {
   if (display && display.reservedBottom) {
     // Promoted to a global setting; strip from per-profile storage.
     delete display.reservedBottom;
+  }
+  const axes = profile?.profile?.axes;
+  if (axes && !axes.right_stick) {
+    axes.right_stick = { mode: 'off', deadzone: 0.18, radius: 1.2 };
   }
 }
 

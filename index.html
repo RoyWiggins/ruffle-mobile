@@ -61,6 +61,21 @@
       <p class="hint">Space below the game (for current orientation), reserved for touch controls.</p>
     </section>
     <section>
+      <h3>Right stick</h3>
+      <label>
+        Mode
+        <select id="right-stick-mode">
+          <option value="off">Off</option>
+          <option value="mouse">Aim virtual mouse</option>
+        </select>
+      </label>
+      <label>
+        Radius <span id="right-stick-radius-value" class="hint" style="min-width:3em;text-align:right"></span>
+        <input type="range" id="right-stick-radius" min="0.6" max="2.0" step="0.05" />
+      </label>
+      <p class="hint">Cursor sits at this fraction of the stage's half-size from center, outside the SWF for direction-only aiming.</p>
+    </section>
+    <section>
       <h3>Touch overlay</h3>
       <label>
         Visibility
