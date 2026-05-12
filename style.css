@@ -67,7 +67,8 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   container-type: size;
 }
 #ruffle-host {
-  width: 100%; height: 100%;
+  width: 100%;
+  height: calc(100% - var(--reserved-bottom, 0%));
   display: flex; justify-content: center; align-items: center;
 }
 #ruffle-host.align-top    { align-items: flex-start; }

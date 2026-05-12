@@ -39,16 +39,19 @@ const BINDING_GROUPS = [
 ];
 
 export class SettingsUI {
-  constructor({ panelEl, getProfile, saveProfile, onChange, onTouchEdit, onReset }) {
+  constructor({ panelEl, getProfile, saveProfile, onChange, onTouchEdit, onReset, getOrientation }) {
     this.panel = panelEl;
     this.getProfile = getProfile;
     this.saveProfile = saveProfile;
     this.onChange = onChange;
     this.onTouchEdit = onTouchEdit;
     this.onReset = onReset;
+    this.getOrientation = getOrientation || (() => 'portrait');
     this.capturing = null; // { binding, rowEl } | null
 
     this.displayAlign = panelEl.querySelector('#display-align');
+    this.reservedBottom = panelEl.querySelector('#reserved-bottom');
+    this.reservedBottomValue = panelEl.querySelector('#reserved-bottom-value');
     this.touchMode = panelEl.querySelector('#touch-mode');
     this.touchOpacity = panelEl.querySelector('#touch-opacity');
     this.touchEditBtn = panelEl.querySelector('#touch-edit-btn');
@@ -61,6 +64,18 @@ export class SettingsUI {
       if (!p) return;
       p.profile.display = p.profile.display || {};
       p.profile.display.align = this.displayAlign.value;
+      this.saveProfile();
+      this.onChange?.();
+    });
+
+    this.reservedBottom.addEventListener('input', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const display = p.profile.display = p.profile.display || {};
+      display.reservedBottom = display.reservedBottom || { portrait: 0, landscape: 0 };
+      const v = Number(this.reservedBottom.value);
+      display.reservedBottom[this.getOrientation()] = v;
+      this.reservedBottomValue.textContent = Math.round(v * 100) + '%';
       this.saveProfile();
       this.onChange?.();
     });
@@ -104,6 +119,9 @@ export class SettingsUI {
     const p = this.getProfile();
     if (!p) return;
     this.displayAlign.value = p.profile.display?.align || 'auto';
+    const reserved = p.profile.display?.reservedBottom?.[this.getOrientation()] ?? 0;
+    this.reservedBottom.value = String(reserved);
+    this.reservedBottomValue.textContent = Math.round(reserved * 100) + '%';
     this.touchMode.value = p.profile.touch.enabled || 'auto';
     this.touchOpacity.value = String(p.profile.touch.opacity ?? 0.6);
     this._renderBindings();

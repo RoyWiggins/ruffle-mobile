@@ -52,6 +52,12 @@ export function defaultProfile() {
           portrait:  { dx: 0, dy: 0 },
           landscape: { dx: 0, dy: 0 },
         },
+        // Fraction of the wrapper reserved at the bottom for touch controls.
+        // The game is fit / aligned in the area *above* this strip.
+        reservedBottom: {
+          portrait: 0,
+          landscape: 0,
+        },
       },
     },
     detected: null,
@@ -129,6 +135,10 @@ function migrateInPlace(profile) {
       ? { portrait: old, landscape: old.map((it) => ({ ...it })) }
       : defaultTouchLayouts();
     delete touch.layout;
+  }
+  const display = profile?.profile?.display;
+  if (display && !display.reservedBottom) {
+    display.reservedBottom = { portrait: 0, landscape: 0 };
   }
 }
 

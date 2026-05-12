@@ -41,6 +41,7 @@ const ui = new SettingsUI({
   onChange: applyProfile,
   onTouchEdit: toggleTouchEdit,
   onReset: doReset,
+  getOrientation: currentOrientation,
 });
 
 function getCurrentProfile() { return currentProfile; }
@@ -154,6 +155,14 @@ function getDisplayOffset() {
   return d.offsets[currentOrientation()] || { dx: 0, dy: 0 };
 }
 
+function getReservedBottom() {
+  const r = currentProfile.profile.display?.reservedBottom;
+  if (!r) return 0;
+  return clamp01(r[currentOrientation()] || 0);
+}
+
+function clamp01(v) { return Math.max(0, Math.min(0.9, v || 0)); }
+
 function setDisplayOffset(dx, dy) {
   const p = currentProfile.profile;
   p.display = p.display || {};
@@ -166,6 +175,10 @@ function fitPlayer() {
   const align = effectiveAlign();
   ruffleHost.classList.remove('align-top', 'align-center', 'align-bottom');
   ruffleHost.classList.add('align-' + align);
+
+  // Shrink the host by the reserved-bottom fraction so the player fits and
+  // aligns within the remaining area; the strip below is left for controls.
+  ruffleHost.style.setProperty('--reserved-bottom', (getReservedBottom() * 100) + '%');
 
   if (!swfDimensions) {
     player.style.width = '100%';
@@ -433,6 +446,7 @@ function onWrapperResize() {
   if (o !== lastOrientation) {
     lastOrientation = o;
     touch.render();
+    if (!settingsPanel.hidden) ui.refresh();
   }
 }
 if (window.ResizeObserver) {
