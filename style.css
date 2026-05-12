@@ -271,8 +271,9 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 /* Fullscreen */
 #player-wrapper:fullscreen {
   width: 100vw; height: 100vh;
-  display: flex; align-items: center; justify-content: center;
+  /* No display:flex here — that would re-center #ruffle-host inside the
+     wrapper and split the reserved-bottom strip between top and bottom.
+     #ruffle-host is positioned in normal flow and its calc()-based height
+     already shrinks it from the top, leaving the reserved space at the
+     bottom for touch controls. */
 }
-/* Don't override #ruffle-host height here — it needs to keep honoring
-   --reserved-bottom set by fitPlayer(). The base rule already gives it
-   width: 100% and the calc()-based height. */
