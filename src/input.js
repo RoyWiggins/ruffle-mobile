@@ -16,6 +16,10 @@ export class InputDispatcher {
     this.bindingToId = new Map();
     // input id -> { count, spec }
     this.refs = new Map();
+    // Aim directions tracked by ref count so multiple bindings can hold
+    // the same direction. Recomputed into a mouse position on every change.
+    this.pointCounts = { left: 0, right: 0, up: 0, down: 0 };
+    this.aimRadius = 1.2;
   }
 
   setHost(el) {
@@ -25,8 +29,33 @@ export class InputDispatcher {
     this.mouse.setHost(el);
   }
 
+  setAimRadius(r) {
+    if (typeof r !== 'number' || !isFinite(r) || r <= 0) return;
+    this.aimRadius = r;
+    if (this._pointActive()) this._updateAim();
+  }
+
   press(binding, spec) {
     if (!spec || !this.host) return;
+    if (Array.isArray(spec)) {
+      for (let i = 0; i < spec.length; i++) this._pressOne(`${binding}:${i}`, spec[i]);
+      return;
+    }
+    this._pressOne(binding, spec);
+  }
+
+  release(binding) {
+    if (this.bindingToId.has(binding)) {
+      this._releaseOne(binding);
+      return;
+    }
+    // Sub-bindings created by array specs.
+    for (const b of Array.from(this.bindingToId.keys())) {
+      if (b.startsWith(binding + ':')) this._releaseOne(b);
+    }
+  }
+
+  _pressOne(binding, spec) {
     const id = keyId(spec);
     const existing = this.bindingToId.get(binding);
     if (existing === id) return;
@@ -39,7 +68,7 @@ export class InputDispatcher {
     if (ref.count === 1) this._down(spec);
   }
 
-  release(binding) {
+  _releaseOne(binding) {
     const id = this.bindingToId.get(binding);
     if (!id) return;
     this.bindingToId.delete(binding);
@@ -60,29 +89,55 @@ export class InputDispatcher {
     if (!this.host) {
       this.bindingToId.clear();
       this.refs.clear();
+      this.pointCounts = { left: 0, right: 0, up: 0, down: 0 };
       this.mouse.releaseAll();
       return;
     }
     for (const [, ref] of this.refs) this._up(ref.spec);
     this.bindingToId.clear();
     this.refs.clear();
+    this.pointCounts = { left: 0, right: 0, up: 0, down: 0 };
     this.mouse.releaseAll();
   }
 
   _down(spec) {
-    if (spec.type === 'mouse') this.mouse.press(spec.button);
-    else this._dispatchKey('keydown', spec);
+    if (spec.type === 'mouse') return this.mouse.press(spec.button);
+    if (spec.type === 'mouse_point') {
+      this.pointCounts[spec.dir]++;
+      this._updateAim();
+      return;
+    }
+    this._dispatchKey('keydown', spec);
   }
 
   _up(spec) {
-    if (spec.type === 'mouse') this.mouse.release(spec.button);
-    else this._dispatchKey('keyup', spec);
+    if (spec.type === 'mouse') return this.mouse.release(spec.button);
+    if (spec.type === 'mouse_point') {
+      this.pointCounts[spec.dir] = Math.max(0, this.pointCounts[spec.dir] - 1);
+      this._updateAim();
+      return;
+    }
+    this._dispatchKey('keyup', spec);
+  }
+
+  _pointActive() {
+    return this.pointCounts.left || this.pointCounts.right ||
+           this.pointCounts.up   || this.pointCounts.down;
+  }
+
+  _updateAim() {
+    const c = this.pointCounts;
+    const x = (c.right > 0 ? 1 : 0) - (c.left > 0 ? 1 : 0);
+    const y = (c.down  > 0 ? 1 : 0) - (c.up   > 0 ? 1 : 0);
+    if (x === 0 && y === 0) return; // don't move the cursor on cancel
+    this.mouse.aimAt(x, y, this.aimRadius);
   }
 
   // Aim the virtual cursor at radius `r` (in fractions of the smaller stage
   // dimension) around the stage center, in direction (sx, sy). Magnitude of
   // (sx, sy) is ignored — only direction matters.
   aimMouseAt(sx, sy, r) {
+    this.aimRadius = r;
     this.mouse.aimAt(sx, sy, r);
   }
 

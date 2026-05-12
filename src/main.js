@@ -67,6 +67,7 @@ function onInputActivity(mode) { setInputMode(mode); }
 function applyProfile() {
   // Release everything currently held — bindings may have changed.
   input.releaseAll();
+  input.setAimRadius(currentProfile.profile.axes?.right_stick?.radius ?? 1.2);
   touch.render();
   applyTouchVisibility();
   fitPlayer();

@@ -38,22 +38,37 @@ export const MOUSE_SPECS = {
   MouseRight:  { type: 'mouse', button: 2 },
 };
 
+// Mouse-aim direction specs. Multiple active directions combine vectorially:
+// left+up = upper-left, opposing pairs (left+right) cancel. Lets the user
+// emulate a right analog stick with four keys/buttons.
+export const MOUSE_POINT_SPECS = {
+  MousePointLeft:  { type: 'mouse_point', dir: 'left'  },
+  MousePointRight: { type: 'mouse_point', dir: 'right' },
+  MousePointUp:    { type: 'mouse_point', dir: 'up'    },
+  MousePointDown:  { type: 'mouse_point', dir: 'down'  },
+};
+
 // Build a normalized id used to dedupe presses across different bindings
 // that produce the same physical key or mouse button. Prefer `code`
 // (layout-independent), fall back to keyCode.
 export function keyId(spec) {
   if (!spec) return null;
   if (spec.type === 'mouse') return `mouse:${spec.button}`;
+  if (spec.type === 'mouse_point') return `mpoint:${spec.dir}`;
   return spec.code || `kc:${spec.keyCode}` || spec.key;
 }
 
 // Resolve a stored binding (one of: a spec object, a string spec name from
-// KEY_SPECS or MOUSE_SPECS, or null) into a fully-populated spec, or null.
+// KEY_SPECS / MOUSE_SPECS / MOUSE_POINT_SPECS, or null) into a fully-
+// populated spec, or null.
 export function resolveSpec(binding) {
   if (!binding) return null;
-  if (typeof binding === 'string') return KEY_SPECS[binding] || MOUSE_SPECS[binding] || null;
+  if (typeof binding === 'string') {
+    return KEY_SPECS[binding] || MOUSE_SPECS[binding] || MOUSE_POINT_SPECS[binding] || null;
+  }
   if (typeof binding === 'object') {
     if (binding.type === 'mouse' && typeof binding.button === 'number') return binding;
+    if (binding.type === 'mouse_point' && typeof binding.dir === 'string') return binding;
     if (binding.keyCode != null) return binding;
   }
   return null;
@@ -64,6 +79,9 @@ export function formatSpec(spec) {
   if (!spec) return '—';
   if (spec.type === 'mouse') {
     return { 0: '🖱 Left', 1: '🖱 Middle', 2: '🖱 Right' }[spec.button] || '🖱';
+  }
+  if (spec.type === 'mouse_point') {
+    return { left: 'Aim ←', right: 'Aim →', up: 'Aim ↑', down: 'Aim ↓' }[spec.dir] || 'Aim';
   }
   if (spec.code === 'Space') return 'Space';
   if (spec.code === 'Enter') return 'Enter';

@@ -233,18 +233,29 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 .hint { color: var(--muted); font-size: 0.85em; margin: 0.2em 0 0.5em; }
 
 .binding-row {
-  display: flex; align-items: center; gap: 0.5em;
+  display: flex; align-items: center; gap: 0.4em;
   padding: 0.4em 0;
+  flex-wrap: wrap;
 }
-.binding-row .label { flex: 1; }
-.binding-row .keyspec {
+.binding-row .label { flex: 1; min-width: 0; }
+.binding-row .binding-slots {
+  display: flex; align-items: center; gap: 0.25em; flex-wrap: wrap;
+}
+.binding-chip {
+  display: inline-flex; align-items: center; gap: 0.1em;
+  background: #111; border-radius: 4px; overflow: hidden;
+}
+.binding-chip .keyspec {
   font-family: ui-monospace, monospace;
-  background: #111; padding: 0.25em 0.55em; border-radius: 3px;
-  font-size: 0.85em; min-width: 80px; text-align: center;
+  background: transparent; padding: 0.25em 0.55em;
+  font-size: 0.85em; min-width: 60px; text-align: center;
+  cursor: pointer;
 }
+.binding-chip .keyspec:hover { background: var(--panel-2); }
+.keyspec-empty { color: var(--muted); padding: 0.25em 0.55em; font-style: italic; }
 .binding-row.capturing .keyspec { background: var(--accent); color: var(--accent-fg); }
-.binding-row .rebind-btn { background: var(--panel-2); padding: 0.3em 0.7em; font-size: 0.85em; }
-.binding-row .clear-btn  { background: transparent; color: var(--muted); padding: 0.3em 0.5em; font-size: 0.85em; }
+.binding-chip .clear-btn { background: transparent; color: var(--muted); padding: 0.25em 0.4em; font-size: 0.85em; }
+.binding-row > .rebind-btn { background: var(--panel-2); padding: 0.3em 0.7em; font-size: 0.85em; }
 
 /* Key picker (used during rebind on touch devices) */
 .key-picker-overlay {

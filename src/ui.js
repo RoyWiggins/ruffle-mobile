@@ -1,7 +1,18 @@
 // Settings panel: per-binding key remapping, touch overlay options,
 // and "edit layout" toggle for the touch overlay.
 
-import { formatSpec, KEY_SPECS, MOUSE_SPECS, specFromKeyboardEvent } from './keys.js';
+import { formatSpec, KEY_SPECS, MOUSE_SPECS, MOUSE_POINT_SPECS, specFromKeyboardEvent } from './keys.js';
+
+// Bindings in storage are either null, a single spec, or an array of specs.
+function bindingSpecArray(v) {
+  if (v == null) return [];
+  return Array.isArray(v) ? v.slice() : [v];
+}
+function packBindingArray(arr) {
+  if (!arr || arr.length === 0) return null;
+  if (arr.length === 1) return arr[0];
+  return arr;
+}
 
 const BINDING_GROUPS = [
   {
@@ -220,36 +231,58 @@ export class SettingsUI {
         const labelEl = document.createElement('span');
         labelEl.className = 'label';
         labelEl.textContent = label;
+        row.appendChild(labelEl);
 
-        const spec = p.profile.gamepad[binding];
-        const specEl = document.createElement('span');
-        specEl.className = 'keyspec';
-        specEl.textContent = formatSpec(spec);
+        const slotsEl = document.createElement('span');
+        slotsEl.className = 'binding-slots';
+        const specs = bindingSpecArray(p.profile.gamepad[binding]);
+        if (specs.length === 0) {
+          const empty = document.createElement('span');
+          empty.className = 'keyspec keyspec-empty';
+          empty.textContent = '—';
+          slotsEl.appendChild(empty);
+        }
+        for (let i = 0; i < specs.length; i++) {
+          slotsEl.appendChild(this._buildSpecChip(binding, i, specs[i]));
+        }
+        row.appendChild(slotsEl);
 
-        const rebindBtn = document.createElement('button');
-        rebindBtn.className = 'rebind-btn';
-        rebindBtn.textContent = 'Rebind';
-        rebindBtn.addEventListener('click', () => this._beginCapture(binding, row));
+        const addBtn = document.createElement('button');
+        addBtn.className = 'rebind-btn';
+        addBtn.title = specs.length === 0 ? 'Bind' : 'Add another binding';
+        addBtn.textContent = specs.length === 0 ? 'Bind' : '+';
+        addBtn.addEventListener('click', () => this._beginCapture(binding, specs.length, row));
+        row.appendChild(addBtn);
 
-        const clearBtn = document.createElement('button');
-        clearBtn.className = 'clear-btn';
-        clearBtn.textContent = '✕';
-        clearBtn.title = 'Unbind';
-        clearBtn.addEventListener('click', () => this._setBinding(binding, null));
-
-        row.append(labelEl, specEl, rebindBtn, clearBtn);
         this.bindingsList.appendChild(row);
       }
     }
   }
 
-  _beginCapture(binding, rowEl) {
+  _buildSpecChip(binding, slotIndex, spec) {
+    const chip = document.createElement('span');
+    chip.className = 'binding-chip';
+    const specEl = document.createElement('span');
+    specEl.className = 'keyspec';
+    specEl.dataset.slot = String(slotIndex);
+    specEl.textContent = formatSpec(spec);
+    specEl.title = 'Tap to rebind';
+    specEl.addEventListener('click', () => this._beginCapture(binding, slotIndex, chip.closest('.binding-row')));
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'clear-btn';
+    clearBtn.textContent = '✕';
+    clearBtn.title = 'Remove this binding';
+    clearBtn.addEventListener('click', () => this._setBinding(binding, slotIndex, null));
+    chip.append(specEl, clearBtn);
+    return chip;
+  }
+
+  _beginCapture(binding, slotIndex, rowEl) {
     this._cancelCapture();
     const label = rowEl.querySelector('.label')?.textContent || binding;
-    this.capturing = { binding, rowEl, label };
+    this.capturing = { binding, slotIndex, rowEl, label };
     rowEl.classList.add('capturing');
-    rowEl.querySelector('.keyspec').textContent = 'Press a key…';
-    this._openKeyPicker(binding, label);
+    this._openKeyPicker(binding, slotIndex, label);
   }
 
   _cancelCapture() {
@@ -260,7 +293,7 @@ export class SettingsUI {
     this._renderBindings();
   }
 
-  _openKeyPicker(binding, label) {
+  _openKeyPicker(binding, slotIndex, label) {
     this._closeKeyPicker();
 
     const overlay = document.createElement('div');
@@ -284,11 +317,12 @@ export class SettingsUI {
     picker.appendChild(header);
 
     const sections = [
-      { label: 'Mouse',   specs: [MOUSE_SPECS.MouseLeft, MOUSE_SPECS.MouseRight, MOUSE_SPECS.MouseMiddle] },
-      { label: 'Arrows',  keys: ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'] },
-      { label: 'Special', keys: ['Space', 'Enter', 'Escape', 'Tab', 'Backspace', 'Shift', 'Control', 'Alt'] },
-      { label: 'Letters', keys: Array.from({ length: 26 }, (_, i) => 'Key' + String.fromCharCode(65 + i)) },
-      { label: 'Digits',  keys: Array.from({ length: 10 }, (_, i) => 'Digit' + i) },
+      { label: 'Mouse',    specs: [MOUSE_SPECS.MouseLeft, MOUSE_SPECS.MouseRight, MOUSE_SPECS.MouseMiddle] },
+      { label: 'Aim',      specs: [MOUSE_POINT_SPECS.MousePointLeft, MOUSE_POINT_SPECS.MousePointRight, MOUSE_POINT_SPECS.MousePointUp, MOUSE_POINT_SPECS.MousePointDown] },
+      { label: 'Arrows',   keys: ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'] },
+      { label: 'Special',  keys: ['Space', 'Enter', 'Escape', 'Tab', 'Backspace', 'Shift', 'Control', 'Alt'] },
+      { label: 'Letters',  keys: Array.from({ length: 26 }, (_, i) => 'Key' + String.fromCharCode(65 + i)) },
+      { label: 'Digits',   keys: Array.from({ length: 10 }, (_, i) => 'Digit' + i) },
     ];
 
     for (const section of sections) {
@@ -304,7 +338,7 @@ export class SettingsUI {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.textContent = formatSpec(spec);
-        btn.addEventListener('click', () => this._setBinding(binding, spec));
+        btn.addEventListener('click', () => this._setBinding(binding, slotIndex, spec));
         grid.appendChild(btn);
       }
       sec.appendChild(grid);
@@ -314,8 +348,8 @@ export class SettingsUI {
     const unbindBtn = document.createElement('button');
     unbindBtn.type = 'button';
     unbindBtn.className = 'picker-unbind';
-    unbindBtn.textContent = 'Unbind';
-    unbindBtn.addEventListener('click', () => this._setBinding(binding, null));
+    unbindBtn.textContent = 'Remove this binding';
+    unbindBtn.addEventListener('click', () => this._setBinding(binding, slotIndex, null));
     picker.appendChild(unbindBtn);
 
     const hint = document.createElement('p');
@@ -347,14 +381,22 @@ export class SettingsUI {
     ev.preventDefault();
     ev.stopPropagation();
     const spec = specFromKeyboardEvent(ev);
-    const { binding } = this.capturing;
-    this._setBinding(binding, spec);
+    const { binding, slotIndex } = this.capturing;
+    this._setBinding(binding, slotIndex, spec);
   };
 
-  _setBinding(binding, spec) {
+  _setBinding(binding, slotIndex, spec) {
     const p = this.getProfile();
     if (!p) return;
-    p.profile.gamepad[binding] = spec;
+    const arr = bindingSpecArray(p.profile.gamepad[binding]);
+    if (spec == null) {
+      if (slotIndex >= 0 && slotIndex < arr.length) arr.splice(slotIndex, 1);
+    } else if (slotIndex >= arr.length) {
+      arr.push(spec);
+    } else {
+      arr[slotIndex] = spec;
+    }
+    p.profile.gamepad[binding] = packBindingArray(arr);
     this.saveProfile();
     this._cancelCapture();
     this.onChange?.();
