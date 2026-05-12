@@ -11,8 +11,11 @@
 const STUB_PATH = new URL('demos/neopets-include-stub.swf', self.registration.scope).pathname;
 
 const PATCHES = [
-  // Neopets games — Flash bios's high-score include_movie wrapper
-  { re: /\/games\/high_scores\/include_movie\.swf(?:[?#].*)?$/i, target: STUB_PATH },
+  // Neopets games — the Flash "bios" liveBios path loadMovieNum's an include
+  // wrapper from one of two URLs depending on the game's bios SDK version.
+  // Both endpoints now 503; serve the local stub for either.
+  { re: /\/games\/gaming_system\/np6_include_v1\.swf(?:[?#].*)?$/i, target: STUB_PATH },
+  { re: /\/games\/high_scores\/include_movie\.swf(?:[?#].*)?$/i,    target: STUB_PATH },
 ];
 
 self.addEventListener('install', () => self.skipWaiting());
