@@ -41,6 +41,22 @@ button.danger { background: var(--danger); }
   flex-wrap: wrap;
 }
 #loader { display: flex; gap: 0.5em; flex: 1; min-width: 220px; }
+#current-swf {
+  flex: 1; min-width: 0;
+  background: var(--panel-2); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 0.4em 0.9em;
+  display: flex; align-items: center; gap: 0.6em;
+  font-size: 0.9em; cursor: pointer;
+  max-width: max-content;
+}
+#current-swf .swf-name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0;
+}
+#current-swf .swf-close { color: var(--muted); font-size: 1em; line-height: 1; }
+#current-swf:hover { border-color: var(--accent); }
+#current-swf:hover .swf-close { color: var(--danger); }
 .file-btn {
   display: inline-flex; align-items: center;
   padding: 0.4em 0.8em;
@@ -49,7 +65,6 @@ button.danger { background: var(--danger); }
 }
 #url-input { flex: 1; min-width: 0; }
 #status { display: flex; gap: 0.5em; align-items: center; font-size: 0.9em; }
-#profile-label { color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #input-mode { font-size: 1.2em; opacity: 0.55; transition: opacity 0.2s; }
 #input-mode.active { opacity: 1; }
 
@@ -67,7 +82,11 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   container-type: size;
 }
 #ruffle-host {
-  width: 100%;
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  /* Reserved-bottom strip is left empty for touch controls. Pinning to
+     top: 0 (rather than relying on normal flow) keeps the strip below in
+     both windowed and fullscreen modes. */
   height: calc(100% - var(--reserved-bottom, 0%));
   display: flex; justify-content: center; align-items: center;
 }

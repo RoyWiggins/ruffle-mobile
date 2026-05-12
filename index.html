@@ -17,8 +17,11 @@
       <input type="url" id="url-input" placeholder="…or paste a SWF URL" autocomplete="off" />
       <button id="load-url-btn" type="button">Load</button>
     </div>
+    <button id="current-swf" type="button" hidden title="Tap to close the current SWF">
+      <span class="swf-name"></span>
+      <span class="swf-close" aria-hidden="true">✕</span>
+    </button>
     <div id="status">
-      <span id="profile-label" title="Active profile">No SWF loaded</span>
       <span id="input-mode" data-mode="keyboard" title="Active input mode">⌨</span>
       <button id="mute-btn" type="button" title="Mute audio" aria-pressed="false">🔊</button>
       <button id="settings-btn" type="button" title="Mapping settings" aria-expanded="false">⚙</button>

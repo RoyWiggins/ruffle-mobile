@@ -18,7 +18,9 @@ const toast         = document.getElementById('toast');
 const fileInput     = document.getElementById('file-input');
 const urlInput      = document.getElementById('url-input');
 const loadUrlBtn    = document.getElementById('load-url-btn');
-const profileLabel  = document.getElementById('profile-label');
+const loaderEl     = document.getElementById('loader');
+const currentSwfEl = document.getElementById('current-swf');
+const swfNameEl    = currentSwfEl.querySelector('.swf-name');
 const inputModeEl   = document.getElementById('input-mode');
 const settingsBtn   = document.getElementById('settings-btn');
 const settingsPanel = document.getElementById('settings-panel');
@@ -66,9 +68,14 @@ function applyProfile() {
   touch.render();
   applyTouchVisibility();
   fitPlayer();
-  if (!currentProfile.swf_sha256) profileLabel.textContent = 'No SWF loaded';
-  else if (currentProfile.label) profileLabel.textContent = currentProfile.label;
-  else profileLabel.textContent = 'Profile ' + currentProfile.swf_sha256.slice(0, 8);
+  if (currentProfile.swf_sha256) {
+    swfNameEl.textContent = currentProfile.label || ('Profile ' + currentProfile.swf_sha256.slice(0, 8));
+    loaderEl.hidden = true;
+    currentSwfEl.hidden = false;
+  } else {
+    loaderEl.hidden = false;
+    currentSwfEl.hidden = true;
+  }
 }
 
 function applyTouchVisibility() {
@@ -323,6 +330,22 @@ refreshMuteBtn();
 // Belt-and-braces: even with Ruffle's contextMenu config off, suppress the
 // browser's own right-click / long-press menu inside the player wrapper.
 wrapper.addEventListener('contextmenu', (ev) => ev.preventDefault());
+
+currentSwfEl.addEventListener('click', () => clearSwf());
+
+function clearSwf() {
+  if (player) {
+    try { player.remove(); } catch (_) {}
+    player = null;
+  }
+  swfDimensions = null;
+  pausedByUI = false;
+  wrapper.classList.remove('has-swf');
+  ruffleHost.innerHTML = '';
+  currentProfile = defaultProfile();
+  applyProfile();
+  showToast('Cleared');
+}
 
 let doneEditBtn = null;
 let gameScrim = null;
