@@ -41,7 +41,7 @@ export function defaultProfile() {
       touch: {
         enabled: 'auto',
         opacity: 0.6,
-        layout: defaultTouchLayout(),
+        layouts: defaultTouchLayouts(),
       },
       display: {
         // 'auto' = top in portrait, center in landscape.
@@ -58,11 +58,10 @@ export function defaultProfile() {
   };
 }
 
-export function defaultTouchLayout() {
-  // Coordinates are 0–1 fractions of the wrapper (item center).
-  // Sizes are 0–1 fractions of the smaller wrapper dimension (cqmin) so the
-  // layout stays usable in portrait orientation.
-  // ABXY is laid out in Xbox-style diamond: Y top, A bottom, X left, B right.
+// Xbox-style ABXY diamond: Y top, X left, B right, A bottom.
+// Coordinates are 0–1 fractions of the wrapper (item center). Sizes are
+// 0–1 fractions of the smaller wrapper dimension (cqmin).
+function portraitLayout() {
   return [
     { id: 'dpad',     type: 'dpad',   x: 0.20, y: 0.72, size: 0.30 },
     { id: 'button_y', type: 'button', x: 0.78, y: 0.62, size: 0.13, label: 'Y', binding: 'button_y' },
@@ -72,6 +71,22 @@ export function defaultTouchLayout() {
     { id: 'start',    type: 'button', x: 0.56, y: 0.93, size: 0.07, label: '▶', binding: 'start' },
     { id: 'select',   type: 'button', x: 0.44, y: 0.93, size: 0.07, label: '⦿', binding: 'select' },
   ];
+}
+
+function landscapeLayout() {
+  return [
+    { id: 'dpad',     type: 'dpad',   x: 0.11, y: 0.66, size: 0.32 },
+    { id: 'button_y', type: 'button', x: 0.86, y: 0.48, size: 0.13, label: 'Y', binding: 'button_y' },
+    { id: 'button_x', type: 'button', x: 0.78, y: 0.66, size: 0.13, label: 'X', binding: 'button_x' },
+    { id: 'button_b', type: 'button', x: 0.94, y: 0.66, size: 0.13, label: 'B', binding: 'button_b' },
+    { id: 'button_a', type: 'button', x: 0.86, y: 0.84, size: 0.13, label: 'A', binding: 'button_a' },
+    { id: 'start',    type: 'button', x: 0.54, y: 0.92, size: 0.07, label: '▶', binding: 'start' },
+    { id: 'select',   type: 'button', x: 0.46, y: 0.92, size: 0.07, label: '⦿', binding: 'select' },
+  ];
+}
+
+export function defaultTouchLayouts() {
+  return { portrait: portraitLayout(), landscape: landscapeLayout() };
 }
 
 // SHA-256 of an ArrayBuffer / Uint8Array, returned as hex.
@@ -96,10 +111,24 @@ export function loadProfile(hash) {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed?.schema_version !== SCHEMA_VERSION) return null;
+    migrateInPlace(parsed);
     return parsed;
   } catch (err) {
     console.warn('[fcp] failed to load profile', err);
     return null;
+  }
+}
+
+// Forward-migrate older v1 profiles that predate the per-orientation layout
+// split. The schema version is the same; this is a within-v1 field rename.
+function migrateInPlace(profile) {
+  const touch = profile?.profile?.touch;
+  if (touch && !touch.layouts) {
+    const old = Array.isArray(touch.layout) ? touch.layout : null;
+    touch.layouts = old
+      ? { portrait: old, landscape: old.map((it) => ({ ...it })) }
+      : defaultTouchLayouts();
+    delete touch.layout;
   }
 }
 

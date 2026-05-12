@@ -32,7 +32,7 @@ let swfDimensions = null; // { width, height } or null
 
 const input = new InputDispatcher();
 const gp = new GamepadHandler(input, getCurrentProfile, onInputActivity);
-const touch = new TouchOverlay(touchEl, input, getCurrentProfile, persistProfile, onInputActivity);
+const touch = new TouchOverlay(touchEl, input, getCurrentProfile, persistProfile, onInputActivity, currentOrientation);
 const ui = new SettingsUI({
   panelEl: settingsPanel,
   getProfile: getCurrentProfile,
@@ -351,11 +351,22 @@ document.addEventListener('fullscreenchange', () => {
   if (player) try { player.focus({ preventScroll: true }); } catch (_) {}
 });
 
-// Re-fit the player on wrapper resize (rotation, window resize).
+// Re-fit the player on wrapper resize (rotation, window resize), and
+// re-render the touch overlay when the orientation flips so it uses the
+// right per-orientation layout.
+let lastOrientation = currentOrientation();
+function onWrapperResize() {
+  fitPlayer();
+  const o = currentOrientation();
+  if (o !== lastOrientation) {
+    lastOrientation = o;
+    touch.render();
+  }
+}
 if (window.ResizeObserver) {
-  new ResizeObserver(() => fitPlayer()).observe(wrapper);
+  new ResizeObserver(onWrapperResize).observe(wrapper);
 } else {
-  window.addEventListener('resize', fitPlayer);
+  window.addEventListener('resize', onWrapperResize);
 }
 
 // Boot

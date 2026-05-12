@@ -4,12 +4,13 @@
 // (0–1) coordinates so the layout scales with the wrapper.
 
 export class TouchOverlay {
-  constructor(rootEl, input, getProfile, saveProfile, onActivity) {
+  constructor(rootEl, input, getProfile, saveProfile, onActivity, getOrientation) {
     this.root = rootEl;
     this.input = input;
     this.getProfile = getProfile;
     this.saveProfile = saveProfile;
     this.onActivity = onActivity;
+    this.getOrientation = getOrientation || (() => 'portrait');
     // pointerId -> { binding | null, dpadEl | null, currentDirs: Set }
     this.pointers = new Map();
     this.editing = false;
@@ -55,7 +56,8 @@ export class TouchOverlay {
   render() {
     const profile = this.getProfile();
     if (!profile) return;
-    const layout = profile.profile.touch.layout || [];
+    const layouts = profile.profile.touch.layouts || {};
+    const layout = layouts[this.getOrientation()] || [];
     this.root.innerHTML = '';
     this._items.clear();
 
@@ -70,10 +72,12 @@ export class TouchOverlay {
   _makeButton(item) {
     const el = document.createElement('div');
     el.className = 'touch-item touch-button';
-    if (item.size && item.size < 0.07) el.classList.add('small');
     el.dataset.id = item.id;
     el.dataset.kind = 'button';
-    el.textContent = item.label || '';
+    const lbl = document.createElement('span');
+    lbl.className = 'label';
+    lbl.textContent = item.label || '';
+    el.appendChild(lbl);
     this._positionItem(el, item);
     if (this.editing) {
       this._attachEditHandlers(el, item);
