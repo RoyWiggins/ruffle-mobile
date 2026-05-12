@@ -57,6 +57,11 @@ export function defaultProfile() {
         // shrinks (useful for games whose declared stage doesn't match what
         // they draw); >1 zooms in.
         zoom: 1.0,
+        // 'aspect' = size the player to the SWF's declared aspect ratio.
+        // 'fill'   = size the player to the host area; Ruffle handles
+        //            internal scaling. Useful for SWFs whose declared stage
+        //            misrepresents the drawing area (e.g. Canabalt).
+        fitMode: 'aspect',
         // NB: reservedBottom is global (in localStorage 'fcp:reservedBottom'),
         // not per-profile — it describes a device preference rather than a
         // per-game setting.

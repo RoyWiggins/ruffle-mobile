@@ -52,6 +52,7 @@ export class SettingsUI {
     this.capturing = null; // { binding, rowEl } | null
 
     this.displayAlign = panelEl.querySelector('#display-align');
+    this.fitMode = panelEl.querySelector('#fit-mode');
     this.reservedBottom = panelEl.querySelector('#reserved-bottom');
     this.reservedBottomValue = panelEl.querySelector('#reserved-bottom-value');
     this.zoom = panelEl.querySelector('#zoom');
@@ -71,6 +72,15 @@ export class SettingsUI {
       if (!p) return;
       p.profile.display = p.profile.display || {};
       p.profile.display.align = this.displayAlign.value;
+      this.saveProfile();
+      this.onChange?.();
+    });
+
+    this.fitMode.addEventListener('change', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      p.profile.display = p.profile.display || {};
+      p.profile.display.fitMode = this.fitMode.value;
       this.saveProfile();
       this.onChange?.();
     });
@@ -150,6 +160,7 @@ export class SettingsUI {
     const p = this.getProfile();
     if (!p) return;
     this.displayAlign.value = p.profile.display?.align || 'auto';
+    this.fitMode.value = p.profile.display?.fitMode || 'aspect';
     const reserved = this.getReservedBottom(this.getOrientation());
     this.reservedBottom.value = String(reserved);
     this.reservedBottomValue.textContent = Math.round(reserved * 100) + '%';

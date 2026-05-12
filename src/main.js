@@ -202,21 +202,21 @@ function fitPlayer() {
   // aligns within the remaining area; the strip below is left for controls.
   ruffleHost.style.setProperty('--reserved-bottom', (getReservedBottom() * 100) + '%');
 
-  if (!swfDimensions) {
-    player.style.width = '100%';
-    player.style.height = '100%';
-    player.style.translate = '';
-    return;
-  }
   const hw = ruffleHost.clientWidth;
   const hh = ruffleHost.clientHeight;
   if (hw === 0 || hh === 0) return;
-  const ga = swfDimensions.width / swfDimensions.height;
-  const ha = hw / hh;
-  let w, h;
-  if (ga > ha) { w = hw; h = w / ga; }
-  else         { h = hh; w = h * ga; }
   const zoom = Math.max(0.25, Math.min(4, currentProfile.profile.display?.zoom ?? 1));
+  const fitMode = currentProfile.profile.display?.fitMode || 'aspect';
+
+  let w, h;
+  if (fitMode === 'fill' || !swfDimensions) {
+    w = hw; h = hh;
+  } else {
+    const ga = swfDimensions.width / swfDimensions.height;
+    const ha = hw / hh;
+    if (ga > ha) { w = hw; h = w / ga; }
+    else         { h = hh; w = h * ga; }
+  }
   w *= zoom; h *= zoom;
   player.style.width = w + 'px';
   player.style.height = h + 'px';
