@@ -1,3 +1,11 @@
+this.getBytesLoaded = function()
+{
+   return 9999;
+};
+this.getBytesTotal = function()
+{
+   return 9999;
+};
 include = new Object();
 include.reset = function()
 {
