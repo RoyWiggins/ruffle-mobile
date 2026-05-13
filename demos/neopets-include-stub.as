@@ -202,15 +202,17 @@ include.createSystemObjects = function(bDictionary)
       }
       return undefined;
    };
+   if(_level0._NP8_objLB != undefined)
+   {
+      _level0._NP8_objLB.gameTranslationSuccess = true;
+   }
    if(_global.NPTranslator != undefined)
    {
       _global.NPTranslator.translate = function()
       {
-         var evt = new Object();
-         evt.type = "onLoad";
-         evt.success = "true";
-         evt.target = this;
-         this.dispatchEvent(evt);
+      };
+      _global.NPTranslator.onLoadHandler = function(evt)
+      {
       };
    }
 };
