@@ -129,3 +129,88 @@ include.setTranslatorTextFieldTarget = function(target)
       }
    };
 };
+include._NP8_GAME_DATA = new Object();
+include.setGameData = function(key, val)
+{
+   this._NP8_GAME_DATA[key] = val;
+};
+include.setGameDataAdd = function(key, subkey, val)
+{
+   if(this._NP8_GAME_DATA[key] == undefined)
+   {
+      this._NP8_GAME_DATA[key] = new Object();
+   }
+   this._NP8_GAME_DATA[key][subkey] = val;
+};
+include._NP8_ScoringSystem = new Object();
+include._NP8_ScoringSystem.value = 0;
+include._NP8_ScoringSystem.reset = function()
+{
+   this.value = 0;
+};
+include._NP8_ScoringSystem.changeby = function(n)
+{
+   this.value += n;
+};
+include._NP8_ScoringSystem.changeto = function(n)
+{
+   this.value = n;
+};
+include._NP8_ScoringSystem.show = function()
+{
+   return this.value;
+};
+include._NP8_ScoringSystem.send = function()
+{
+};
+include._NP8_ScoringSystem.submit = function()
+{
+};
+include._NP8_ScoringSystem.submitScore = function(weight)
+{
+   _level100.include.bScoringMeterClick = true;
+};
+include._NP8_NeoStatus = new Object();
+include._NP8_NeoStatus.sendTag = function(tag)
+{
+};
+include.bScoringMeterClick = false;
+include.createSystemObjects = function(bDictionary)
+{
+   _level0.__resolve = function(name)
+   {
+      if(typeof name != "string")
+      {
+         return undefined;
+      }
+      if(name.substring(0,4) == "IDS_")
+      {
+         var k = name.substring(4);
+         if(k.indexOf("_OPEN") >= 0 || k.indexOf("_CLOSE") >= 0)
+         {
+            return "";
+         }
+         return k.split("_").join(" ");
+      }
+      if(name.substring(0,4) == "FGS_")
+      {
+         return name.substring(4).split("_").join(" ");
+      }
+      if(name.substring(0,6) == "ttext_")
+      {
+         return name.substring(6).split("_").join(" ");
+      }
+      return undefined;
+   };
+   if(_global.NPTranslator != undefined)
+   {
+      _global.NPTranslator.translate = function()
+      {
+         var evt = new Object();
+         evt.type = "onLoad";
+         evt.success = "true";
+         evt.target = this;
+         this.dispatchEvent(evt);
+      };
+   }
+};
