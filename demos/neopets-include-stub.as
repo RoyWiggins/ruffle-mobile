@@ -6,6 +6,20 @@ this.getBytesTotal = function()
 {
    return 9999;
 };
+if(_global.NPTranslator != undefined)
+{
+   _global.NPTranslator.onLoadHandler = function(evt)
+   {
+   };
+}
+this.onEnterFrame = function()
+{
+   if(_level0._NP8_objLB != undefined)
+   {
+      _level0._NP8_objLB.gameTranslationSuccess = true;
+      this.onEnterFrame = undefined;
+   }
+};
 include = new Object();
 include.reset = function()
 {
@@ -216,11 +230,16 @@ include.createSystemObjects = function(bDictionary)
    }
    if(_global.NPTranslator != undefined)
    {
-      _global.NPTranslator.translate = function()
-      {
-      };
       _global.NPTranslator.onLoadHandler = function(evt)
       {
+      };
+      _global.NPTranslator.translate = function()
+      {
+         var evt = new Object();
+         evt.type = "onLoad";
+         evt.success = "true";
+         evt.target = this;
+         this.dispatchEvent(evt);
       };
    }
 };
