@@ -18,6 +18,7 @@ const PATCHES = [
   { re: /\/games\/utilities\/flash_bios\/bios\.swf(?:[?#].*)?$/i, target: STUB_BIOS },
   // Include / high-score wrappers — same idea, host-agnostic.
   { re: /\/games\/gaming_system\/np6_include_v1\.swf(?:[?#].*)?$/i, target: STUB_INCLUDE },
+  { re: /\/games\/gaming_system\/np8_include_v1\.swf(?:[?#].*)?$/i, target: STUB_INCLUDE },
   { re: /\/games\/high_scores\/include_movie\.swf(?:[?#].*)?$/i,    target: STUB_INCLUDE },
 ];
 
