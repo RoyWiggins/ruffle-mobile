@@ -32,7 +32,7 @@ self.addEventListener('fetch', (event) => {
   for (const p of PATCHES) {
     if (p.re.test(url)) {
       event.respondWith(
-        fetch(p.target, { cache: 'force-cache' }).catch(() =>
+        fetch(p.target, { cache: 'no-store' }).catch(() =>
           new Response(new Uint8Array(), { status: 502 })),
       );
       return;
