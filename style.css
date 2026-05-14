@@ -311,6 +311,133 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 .picker-unbind { background: var(--danger); margin-top: 0.8em; width: 100%; }
 .picker-hint { color: var(--muted); font-size: 0.85em; text-align: center; margin: 0.6em 0 0; }
 
+/* ── Flashpoint browse button in empty state ──────────────────────────── */
+#fp-empty-browse-btn {
+  background: transparent;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  padding: 0.9em 1.6em;
+  border-radius: 999px;
+  font-size: 1.15em; font-weight: 600;
+  cursor: pointer;
+}
+#fp-empty-browse-btn:hover { background: var(--accent); color: var(--accent-fg); }
+
+/* ── Flashpoint search panel ──────────────────────────────────────────── */
+#fp-panel {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  z-index: 110;
+}
+#fp-panel-header {
+  display: flex; align-items: center; gap: 0.5em;
+  padding: 0.45em 0.6em;
+  background: var(--panel); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#fp-panel-close {
+  background: transparent; color: var(--fg);
+  padding: 0.45em 0.6em; font-size: 1.15em; flex-shrink: 0;
+}
+#fp-search-row { display: flex; gap: 0.4em; flex: 1; min-width: 0; }
+#fp-search-input {
+  flex: 1; min-width: 0;
+  background: #111; border: 1px solid var(--border);
+  padding: 0.5em 0.75em; border-radius: 4px;
+  color: var(--fg); font-size: 1em;
+}
+#fp-search-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+#fp-search-btn { flex-shrink: 0; min-height: 44px; }
+
+#fp-results-wrap { flex: 1; overflow-y: auto; padding: 0.6em; }
+
+#fp-search-status {
+  text-align: center; color: var(--muted);
+  padding: 1em 0 0.5em; font-size: 0.9em;
+}
+#fp-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.55em;
+}
+
+.fp-tile {
+  display: flex; flex-direction: column;
+  background: var(--panel-2); border-radius: 8px;
+  overflow: hidden; cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.fp-tile:hover, .fp-tile:focus-visible { border-color: var(--accent); outline: none; }
+.fp-tile:active { opacity: 0.8; }
+.fp-tile-img {
+  width: 100%; aspect-ratio: 1;
+  object-fit: cover; display: block;
+  background: var(--panel);
+}
+.fp-tile-title {
+  padding: 0.35em 0.5em 0.45em;
+  font-size: 0.78em; line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+#fp-results-more {
+  display: flex; justify-content: center; padding: 1em 0;
+}
+#fp-load-more-btn { background: var(--panel-2); padding: 0.6em 1.4em; }
+#fp-results-empty, #fp-results-error {
+  text-align: center; color: var(--muted); padding: 3em 1em; margin: 0;
+}
+#fp-results-error { color: var(--danger); }
+
+/* ── Download overlay ─────────────────────────────────────────────────── */
+#fp-download {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 1.5em;
+}
+#fp-download-card {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.6em 1.4em;
+  width: 100%; max-width: 360px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 0.75em;
+  box-shadow: 0 10px 36px rgba(0,0,0,0.55);
+}
+#fp-download-name {
+  font-weight: 600; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#fp-download-stage {
+  font-size: 0.85em; color: var(--muted); text-align: center;
+  min-height: 1.2em;
+}
+#fp-download-bar-wrap {
+  height: 8px; background: var(--bg);
+  border-radius: 999px; overflow: hidden;
+}
+#fp-download-bar {
+  height: 100%; background: var(--accent);
+  border-radius: 999px; width: 0%;
+  transition: width 0.15s linear;
+}
+#fp-download-bar.indeterminate {
+  width: 40% !important;
+  animation: fp-indeterminate 1.2s ease-in-out infinite;
+}
+@keyframes fp-indeterminate {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+#fp-download-pct {
+  text-align: center; color: var(--muted);
+  font-size: 0.9em; min-height: 1.2em;
+}
+#fp-download-cancel { align-self: center; margin-top: 0.25em; }
+
 /* Fullscreen */
 #player-wrapper:fullscreen {
   width: 100vw; height: 100vh;

@@ -22,10 +22,14 @@ export function isFlashpointZip(file) {
 // Parses a Flashpoint archive, populates the Cache API, and returns the SWF
 // to load.
 //
+// source — a File (upload) or an ArrayBuffer (downloaded via URL)
+// hintLaunchCommand — optional launch URL from the 9o3o game-detail page;
+//   used as a fallback when content.json has no launchCommand.
+//
 // Returns { launchUrl: string, launchData: Uint8Array }
 // launchUrl — the original game URL (e.g. 'http://host/path/game.swf')
-export async function loadFlashpointArchive(file) {
-  const buf = await file.arrayBuffer();
+export async function loadFlashpointArchive(source, hintLaunchCommand = null) {
+  const buf = source instanceof ArrayBuffer ? source : await source.arrayBuffer();
   const entries = await readZip(buf);
 
   // Optional launchCommand in content.json
@@ -38,6 +42,9 @@ export async function loadFlashpointArchive(file) {
         launchCommand = meta.launchCommand.trim();
       }
     } catch (_) {}
+  }
+  if (!launchCommand && hintLaunchCommand) {
+    launchCommand = hintLaunchCommand.trim();
   }
 
   const cache = await caches.open(FLASHPOINT_CACHE_NAME);
