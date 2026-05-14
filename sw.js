@@ -45,7 +45,12 @@ async function handleFetch(request) {
       || (await cache.match(urlLower.replace(/^http:\/\//, 'https://')));
     if (cached) {
       broadcast({ url, via: 'archive', status: 200 });
-      return cached;
+      // Re-wrap to guarantee CORS headers are present (old cache entries may
+      // have been stored before CORS headers were added to makeResponse).
+      const h = new Headers(cached.headers);
+      h.set('Access-Control-Allow-Origin', '*');
+      h.set('Access-Control-Allow-Methods', 'GET, HEAD');
+      return new Response(cached.body, { status: cached.status, headers: h });
     }
   } catch (_) {}
 
