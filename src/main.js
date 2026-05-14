@@ -11,7 +11,8 @@ import { TouchOverlay } from './touch.js';
 import { SettingsUI } from './ui.js';
 import { readSwfDimensions } from './swf.js';
 import {
-  isFlashpointZip, loadFlashpointArchive, clearFlashpointCache, setLegacyServer,
+  isFlashpointZip, loadFlashpointArchive, clearFlashpointCache,
+  setLegacyServer, cacheSwf,
 } from './flashpoint.js';
 import { initFlashpointBrowser } from './flashpoint-browser.js';
 
@@ -139,14 +140,14 @@ async function loadSwfFromBuffer(buf, label, swfUrl = null) {
   ruffleHost.innerHTML = '';
   ruffleHost.appendChild(player);
 
+  // When we have a game URL, put the SWF in the archive cache and use URL
+  // mode so Ruffle fetches it through the service worker. That gives Ruffle
+  // the correct origin for relative loadMovie() / Sound() paths without
+  // relying on the 'base' hint, which Ruffle ignores in data mode.
+  if (swfUrl) await cacheSwf(buf, swfUrl);
+
   await player.load({
-    data: buf,
-    // base tells Ruffle the game's directory URL so relative loadMovie() /
-    // Sound() calls resolve to the right origin and the SW can intercept them.
-    // 'url' and 'data' are mutually exclusive in Ruffle's load API — when both
-    // are present Ruffle uses data mode and silently ignores 'url', so relative
-    // assets would resolve against our app's origin instead of the game's.
-    ...(swfUrl ? { base: swfUrl.replace(/[^/]+$/, '') } : {}),
+    ...(swfUrl ? { url: swfUrl.toLowerCase() } : { data: buf }),
     letterbox: 'off',
     contextMenu: 'off', // never show Ruffle's right-click / long-press menu
     autoplay: 'on',     // user already clicked Open/Demo — skip click-to-play

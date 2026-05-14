@@ -105,6 +105,20 @@ export async function setLegacyServer(url) {
   } catch (_) {}
 }
 
+// Inserts a single SWF buffer into the archive cache under its URL so that
+// Ruffle can fetch it via the service worker and obtain the correct origin for
+// relative loadMovie() / Sound() resolution (URL mode, not data mode).
+export async function cacheSwf(buf, url) {
+  try {
+    const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    const cache = await caches.open(FLASHPOINT_CACHE_NAME);
+    const http  = url.toLowerCase().replace(/^https?:\/\//, 'http://');
+    const https = url.toLowerCase().replace(/^https?:\/\//, 'https://');
+    await cache.put(http,  makeResponse(bytes.slice(), 'application/x-shockwave-flash'));
+    await cache.put(https, makeResponse(bytes.slice(), 'application/x-shockwave-flash'));
+  } catch (_) {}
+}
+
 // Removes all entries from the flashpoint cache (call when closing a game).
 export async function clearFlashpointCache() {
   try {
