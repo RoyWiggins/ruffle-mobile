@@ -54,7 +54,35 @@ async function handleFetch(request) {
     }
   } catch (_) {}
 
-  // 2. Stub patches for dead / CORS-blocked third-party deps.
+  // 2. Legacy-server fallback: for cross-origin requests when a legacy game is
+  //    active (no zip). Try this BEFORE stubs so the real game file is served
+  //    when the legacy server has it (e.g. include SWFs that would otherwise
+  //    be replaced by a minimal stub that the game depends on for callbacks).
+  if (isCrossOrigin) {
+    try {
+      const cache     = await caches.open(CACHE_NAME);
+      const legacyRes = await cache.match(LEGACY_KEY);
+      if (legacyRes) {
+        const legacyBase = (await legacyRes.text()).replace(/\/$/, '');
+        const reqUrl     = new URL(url);
+        const legacyUrl  = legacyBase + '/' + reqUrl.hostname + reqUrl.pathname;
+        const proxied    = PROXY_BASE + encodeURIComponent(legacyUrl);
+        const res        = await fetch(proxied);
+        broadcast({ url, via: 'legacy', status: res.status });
+        if (res.ok) {
+          // Re-wrap headers so Ruffle can always read the body regardless of
+          // whether the proxy forwarded CORS headers from the origin server.
+          const headers = new Headers(res.headers);
+          headers.set('Access-Control-Allow-Origin', '*');
+          headers.set('Access-Control-Allow-Methods', 'GET, HEAD');
+          return new Response(res.body, { status: res.status, headers });
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 3. Stub patches for dead / CORS-blocked third-party deps (fallback when
+  //    the legacy server doesn't have the file).
   for (const p of PATCHES) {
     if (p.re.test(url)) {
       broadcast({ url, via: p.via, status: 200 });
@@ -87,33 +115,6 @@ async function handleFetch(request) {
         headers: { 'Access-Control-Allow-Origin': '*' },
       });
     }
-  }
-
-  // 3. Legacy-server fallback: for cross-origin requests when a legacy game is
-  //    active (no zip). Mirrors every request as
-  //    legacyServer/<hostname><pathname> through the CORS proxy, exactly as
-  //    9o3o does. Covers level SWFs and other assets the archive doesn't have.
-  if (isCrossOrigin) {
-    try {
-      const cache     = await caches.open(CACHE_NAME);
-      const legacyRes = await cache.match(LEGACY_KEY);
-      if (legacyRes) {
-        const legacyBase = (await legacyRes.text()).replace(/\/$/, '');
-        const reqUrl     = new URL(url);
-        const legacyUrl  = legacyBase + '/' + reqUrl.hostname + reqUrl.pathname;
-        const proxied    = PROXY_BASE + encodeURIComponent(legacyUrl);
-        const res        = await fetch(proxied);
-        broadcast({ url, via: 'legacy', status: res.status });
-        if (res.ok) {
-          // Re-wrap headers so Ruffle can always read the body regardless of
-          // whether the proxy forwarded CORS headers from the origin server.
-          const headers = new Headers(res.headers);
-          headers.set('Access-Control-Allow-Origin', '*');
-          headers.set('Access-Control-Allow-Methods', 'GET, HEAD');
-          return new Response(res.body, { status: res.status, headers });
-        }
-      }
-    } catch (_) {}
   }
 
   // 4. Normal network pass-through for cross-origin requests.
