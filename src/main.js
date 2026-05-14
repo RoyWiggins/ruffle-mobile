@@ -13,6 +13,7 @@ import { readSwfDimensions } from './swf.js';
 import {
   isFlashpointZip, loadFlashpointArchive, clearFlashpointCache,
 } from './flashpoint.js';
+import { initFlashpointBrowser } from './flashpoint-browser.js';
 
 const wrapper       = document.getElementById('player-wrapper');
 const ruffleHost    = document.getElementById('ruffle-host');
@@ -296,10 +297,15 @@ async function loadFromFile(file) {
 }
 
 async function loadFromZip(file) {
+  await loadFromFlashpointBuffer(await file.arrayBuffer(), file.name, null);
+}
+
+// Shared entry point used by both file-upload and browser-download paths.
+async function loadFromFlashpointBuffer(buf, title, launchCommand) {
   showToast('Loading archive…', 30000);
   try {
-    const { launchUrl, launchData } = await loadFlashpointArchive(file);
-    const label = launchUrl.split('/').pop() || file.name;
+    const { launchUrl, launchData } = await loadFlashpointArchive(buf, launchCommand);
+    const label = title || launchUrl.split('/').pop();
     await loadSwfFromBuffer(launchData, label, launchUrl);
   } catch (err) {
     console.error(err);
@@ -609,6 +615,10 @@ if (window.ResizeObserver) {
 applyProfile();
 applyTouchVisibility();
 gp.start();
+initFlashpointBrowser({
+  onLoad:  (buf, title, launchCommand) => loadFromFlashpointBuffer(buf, title, launchCommand),
+  onToast: showToast,
+});
 
 // Service worker patches dead CDN dependencies in old SWFs (e.g. Neopets
 // games that loadMovie a now-503ing high-scores wrapper). Only runs on
