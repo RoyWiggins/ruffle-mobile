@@ -46,8 +46,9 @@ export async function getGameInfo(id) {
   const c = doc.querySelector('.player-container');
   if (!c) throw new Error('Game data not found');
   return {
-    zipUrl:        c.dataset.gameZip     || null,
+    zipUrl:        c.dataset.gameZip      || null,
     launchCommand: c.dataset.launchCommand || null,
+    legacyServer:  c.dataset.legacyServer  || null,
   };
 }
 
