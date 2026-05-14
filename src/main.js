@@ -616,8 +616,9 @@ applyProfile();
 applyTouchVisibility();
 gp.start();
 initFlashpointBrowser({
-  onLoad:  (buf, title, launchCommand) => loadFromFlashpointBuffer(buf, title, launchCommand),
-  onToast: showToast,
+  onLoad:    (buf, title, launchCommand) => loadFromFlashpointBuffer(buf, title, launchCommand),
+  onLoadSwf: (buf, title, url) => loadSwfFromBuffer(buf, title, url).catch(err => showToast('Failed: ' + err.message, 4000)),
+  onToast:   showToast,
 });
 
 // Service worker patches dead CDN dependencies in old SWFs (e.g. Neopets

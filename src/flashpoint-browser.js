@@ -9,7 +9,10 @@
 
 import { searchGames, getGameInfo, downloadZip } from './flashpoint-search.js';
 
-export function initFlashpointBrowser({ onLoad, onToast }) {
+// onLoad(buf, title, launchCommand)  — caller unzips and plays
+// onLoadSwf(buf, title, url)          — caller plays SWF directly (legacy path)
+// onToast(msg, ms)
+export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast }) {
   // ---------- DOM refs ----------
   const panel          = document.getElementById('fp-panel');
   const closeBtn       = document.getElementById('fp-panel-close');
@@ -152,19 +155,36 @@ export function initFlashpointBrowser({ onLoad, onToast }) {
     dlCancelBtn.onclick = cancelDownload;
 
     try {
-      // Step 1: resolve zip URL from game detail page.
-      const { zipUrl, launchCommand } = await getGameInfo(game.id);
+      // Step 1: resolve zip URL (or legacy-server fallback) from game detail page.
+      const { zipUrl, launchCommand, legacyServer } = await getGameInfo(game.id);
       if (dlAbort.signal.aborted) return;
 
-      if (!zipUrl) throw new Error('No download available for this game');
-
-      // Step 2: stream zip through proxy.
-      setProgress(0, 'Downloading…');
-      const buf = await downloadZip(zipUrl, (p) => setProgress(p), dlAbort.signal);
-      if (dlAbort.signal.aborted) return;
-
-      dlOverlay.hidden = true;
-      onLoad(buf, game.title, launchCommand);
+      if (zipUrl) {
+        // Normal path: stream the full zip.
+        setProgress(0, 'Downloading…');
+        const buf = await downloadZip(zipUrl, (p) => setProgress(p), dlAbort.signal);
+        if (dlAbort.signal.aborted) return;
+        dlOverlay.hidden = true;
+        onLoad(buf, game.title, launchCommand);
+      } else if (legacyServer && launchCommand) {
+        // Legacy path: no zip — fetch just the main SWF from the legacy server.
+        // Ancillary assets (bios, include, XLIFF) are covered by the SW stubs.
+        setProgress(null, 'Downloading…');
+        const swfUrl = new URL(launchCommand);
+        const legacyUrl = legacyServer.replace(/\/$/, '')
+          + '/' + swfUrl.hostname + swfUrl.pathname;
+        const res = await fetch(
+          'https://scratch-blnn7.sprites.app/cors-proxy/?url=' + encodeURIComponent(legacyUrl),
+          { signal: dlAbort.signal },
+        );
+        if (!res.ok) throw new Error(`Download failed (${res.status})`);
+        const buf = await res.arrayBuffer();
+        if (dlAbort.signal.aborted) return;
+        dlOverlay.hidden = true;
+        onLoadSwf(buf, game.title, launchCommand);
+      } else {
+        throw new Error('No download available for this game');
+      }
     } catch (err) {
       if (err.name === 'AbortError') return;
       dlOverlay.hidden = true;
