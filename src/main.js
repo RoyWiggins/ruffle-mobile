@@ -117,6 +117,7 @@ async function ensureRuffle() {
 }
 
 async function loadSwfFromBuffer(buf, label, swfUrl = null) {
+  wrapper.classList.add('is-loading');
   const [hash, dims] = await Promise.all([
     sha256Hex(buf),
     readSwfDimensions(buf).catch(() => null),
@@ -149,6 +150,7 @@ async function loadSwfFromBuffer(buf, label, swfUrl = null) {
     unmuteOverlay: 'hidden',
   });
   wrapper.classList.add('has-swf');
+  wrapper.classList.remove('is-loading');
   input.setHost(player);
   applyMute();
   fitPlayer();
@@ -287,10 +289,12 @@ async function loadFromFile(file) {
     await loadFromZip(file);
     return;
   }
+  wrapper.classList.add('is-loading');
   try {
     const buf = await file.arrayBuffer();
     await loadSwfFromBuffer(buf, file.name);
   } catch (err) {
+    wrapper.classList.remove('is-loading');
     console.error(err);
     showToast('Failed to load file: ' + err.message);
   }
@@ -302,18 +306,21 @@ async function loadFromZip(file) {
 
 // Shared entry point used by both file-upload and browser-download paths.
 async function loadFromFlashpointBuffer(buf, title, launchCommand) {
+  wrapper.classList.add('is-loading');
   showToast('Loading archive…', 30000);
   try {
     const { launchUrl, launchData } = await loadFlashpointArchive(buf, launchCommand);
     const label = title || launchUrl.split('/').pop();
     await loadSwfFromBuffer(launchData, label, launchUrl);
   } catch (err) {
+    wrapper.classList.remove('is-loading');
     console.error(err);
     showToast('Failed to load archive: ' + err.message);
   }
 }
 
 async function loadFromUrl(url) {
+  wrapper.classList.add('is-loading');
   try {
     const res = await fetch(url, { mode: 'cors' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -321,6 +328,7 @@ async function loadFromUrl(url) {
     const label = url.split('/').pop()?.split('?')[0] || url;
     await loadSwfFromBuffer(buf, label);
   } catch (err) {
+    wrapper.classList.remove('is-loading');
     console.error(err);
     showToast('Failed to load URL: ' + err.message);
   }
@@ -444,11 +452,8 @@ currentSwfEl.addEventListener('click', () => clearSwf());
 const emptyStateEl = document.getElementById('empty-state');
 demoBtn?.addEventListener('click', async () => {
   demoBtn.disabled = true;
-  if (emptyStateEl) emptyStateEl.hidden = true;
   try {
     await loadFromUrl(new URL('demos/ezplatformer.swf', document.baseURI).toString());
-  } catch (_) {
-    if (emptyStateEl) emptyStateEl.hidden = false;
   } finally {
     demoBtn.disabled = false;
   }
@@ -462,12 +467,13 @@ function clearSwf() {
   swfDimensions = null;
   pausedByUI = false;
   pausedByButton = false;
-  wrapper.classList.remove('has-swf');
+  wrapper.classList.remove('has-swf', 'is-loading');
   ruffleHost.innerHTML = '';
   currentProfile = defaultProfile();
   applyProfile();
   clearFlashpointCache().catch(() => {});
   setLegacyServer(null).catch(() => {});
+  history.replaceState(null, '', location.pathname);
   showToast('Cleared');
 }
 
@@ -616,11 +622,18 @@ if (window.ResizeObserver) {
 applyProfile();
 applyTouchVisibility();
 gp.start();
-initFlashpointBrowser({
+const fpBrowser = initFlashpointBrowser({
   onLoad:    (buf, title, launchCommand) => loadFromFlashpointBuffer(buf, title, launchCommand),
-  onLoadSwf: (buf, title, url) => loadSwfFromBuffer(buf, title, url).catch(err => showToast('Failed: ' + err.message, 4000)),
+  onLoadSwf: (buf, title, url) => loadSwfFromBuffer(buf, title, url).catch(err => {
+    wrapper.classList.remove('is-loading');
+    showToast('Failed: ' + err.message, 4000);
+  }),
   onToast:   showToast,
 });
+
+// Deep-link: ?fp=<uuid> auto-loads a Flashpoint game on page open.
+const deepLinkId = new URLSearchParams(location.search).get('fp');
+if (deepLinkId) fpBrowser.loadById(deepLinkId);
 
 // Service worker patches dead CDN dependencies in old SWFs (e.g. Neopets
 // games that loadMovie a now-503ing high-scores wrapper). Only runs on

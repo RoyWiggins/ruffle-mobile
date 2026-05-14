@@ -114,7 +114,8 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   cursor: pointer;
 }
 #demo-btn:hover { filter: brightness(1.1); }
-#player-wrapper.has-swf #empty-state { display: none; }
+#player-wrapper.has-swf #empty-state,
+#player-wrapper.is-loading #empty-state { display: none; }
 #player-wrapper.drag-over { outline: 3px dashed var(--accent); outline-offset: -8px; }
 
 #toast {
@@ -465,13 +466,13 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   padding: 0.15em 0.5em; font-size: 0.9em;
 }
 #net-console-log {
-  flex: 1; overflow-y: auto; padding: 0.15em 0;
+  flex: 1; overflow-y: auto; overflow-x: auto; padding: 0.15em 0;
 }
 .net-entry {
   display: flex; gap: 0.5em; align-items: baseline;
   padding: 0.18em 0.5em;
   border-bottom: 1px solid rgba(255,255,255,0.03);
-  min-width: 0;
+  min-width: max-content;
 }
 .net-via {
   flex-shrink: 0; font-weight: 700;
@@ -487,8 +488,7 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 .net-status-ok  { color: #4ade80; }
 .net-status-err { color: #f87171; }
 .net-url {
-  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--muted); min-width: 0;
+  white-space: nowrap; color: var(--muted);
 }
 
 /* Fullscreen */
