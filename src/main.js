@@ -38,6 +38,7 @@ let inputModeTimer = null;
 let swfDimensions = null; // { width, height } or null
 
 const input = new InputDispatcher();
+input.onAction = handleAction;
 const gp = new GamepadHandler(input, getCurrentProfile, onInputActivity);
 const touch = new TouchOverlay(touchEl, input, getCurrentProfile, persistProfile, onInputActivity, currentOrientation);
 const ui = new SettingsUI({
@@ -350,18 +351,33 @@ settingsPanel.querySelector('#settings-close').addEventListener('click', () => {
   applyAutoPause();
 });
 
-// Pause Ruffle while the user is in the settings panel or editing the touch
-// layout. We track our own pause state so we don't fight with whatever Ruffle
-// is doing on its own (e.g. a click-to-play overlay before first interaction).
+// Pause Ruffle while the user is in the settings panel, editing the touch
+// layout, the page is hidden, or the user has explicitly paused via a binding.
+// We track our own pause state so we don't fight with whatever Ruffle is doing
+// on its own (e.g. a click-to-play overlay before first interaction).
 let pausedByUI = false;
+let pausedByButton = false; // toggled by the Pause action binding
+
 function applyAutoPause() {
   if (!player) return;
-  const want = !settingsPanel.hidden || touch.editing || document.hidden;
+  const want = !settingsPanel.hidden || touch.editing || document.hidden || pausedByButton;
   if (want && !pausedByUI) {
     try { player.pause?.(); pausedByUI = true; } catch (_) {}
   } else if (!want && pausedByUI) {
     try { player.play?.(); } catch (_) {}
     pausedByUI = false;
+  }
+}
+
+function handleAction(action) {
+  if (action === 'pause') {
+    pausedByButton = !pausedByButton;
+    applyAutoPause();
+  } else if (action === 'menu') {
+    if (settingsPanel.hidden) ui.open();
+    else ui.close();
+    settingsBtn.setAttribute('aria-expanded', String(!settingsPanel.hidden));
+    applyAutoPause();
   }
 }
 document.addEventListener('visibilitychange', applyAutoPause);
@@ -439,6 +455,7 @@ function clearSwf() {
   }
   swfDimensions = null;
   pausedByUI = false;
+  pausedByButton = false;
   wrapper.classList.remove('has-swf');
   ruffleHost.innerHTML = '';
   currentProfile = defaultProfile();

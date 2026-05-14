@@ -11,6 +11,7 @@ import { keyId } from './keys.js';
 export class InputDispatcher {
   constructor() {
     this.host = null;
+    this.onAction = null; // (action: string) => void — set by main.js
     this.mouse = new MouseController();
     // binding name -> input id currently held by that binding
     this.bindingToId = new Map();
@@ -107,6 +108,10 @@ export class InputDispatcher {
       this._updateAim();
       return;
     }
+    if (spec.type === 'action') {
+      this.onAction?.(spec.action);
+      return;
+    }
     this._dispatchKey('keydown', spec);
   }
 
@@ -117,6 +122,7 @@ export class InputDispatcher {
       this._updateAim();
       return;
     }
+    if (spec.type === 'action') return; // actions fire on press only, not release
     this._dispatchKey('keyup', spec);
   }
 
