@@ -141,9 +141,12 @@ async function loadSwfFromBuffer(buf, label, swfUrl = null) {
 
   await player.load({
     data: buf,
-    // swfUrl tells Ruffle the SWF's original URL so relative loadMovie()
-    // calls resolve against the right origin and the SW can intercept them.
-    ...(swfUrl ? { url: swfUrl } : {}),
+    // base tells Ruffle the game's directory URL so relative loadMovie() /
+    // Sound() calls resolve to the right origin and the SW can intercept them.
+    // 'url' and 'data' are mutually exclusive in Ruffle's load API — when both
+    // are present Ruffle uses data mode and silently ignores 'url', so relative
+    // assets would resolve against our app's origin instead of the game's.
+    ...(swfUrl ? { base: swfUrl.replace(/[^/]+$/, '') } : {}),
     letterbox: 'off',
     contextMenu: 'off', // never show Ruffle's right-click / long-press menu
     autoplay: 'on',     // user already clicked Open/Demo — skip click-to-play
