@@ -48,6 +48,14 @@ export const MOUSE_POINT_SPECS = {
   MousePointDown:  { type: 'mouse_point', dir: 'down'  },
 };
 
+// App-level actions triggered on button press (edge-triggered, not held).
+// These are intercepted before any keyboard/mouse dispatch and handled by
+// main.js (pause toggles Ruffle; menu opens the settings panel).
+export const ACTION_SPECS = {
+  Pause: { type: 'action', action: 'pause' },
+  Menu:  { type: 'action', action: 'menu'  },
+};
+
 // Build a normalized id used to dedupe presses across different bindings
 // that produce the same physical key or mouse button. Prefer `code`
 // (layout-independent), fall back to keyCode.
@@ -55,6 +63,7 @@ export function keyId(spec) {
   if (!spec) return null;
   if (spec.type === 'mouse') return `mouse:${spec.button}`;
   if (spec.type === 'mouse_point') return `mpoint:${spec.dir}`;
+  if (spec.type === 'action') return `action:${spec.action}`;
   return spec.code || `kc:${spec.keyCode}` || spec.key;
 }
 
@@ -64,11 +73,12 @@ export function keyId(spec) {
 export function resolveSpec(binding) {
   if (!binding) return null;
   if (typeof binding === 'string') {
-    return KEY_SPECS[binding] || MOUSE_SPECS[binding] || MOUSE_POINT_SPECS[binding] || null;
+    return KEY_SPECS[binding] || MOUSE_SPECS[binding] || MOUSE_POINT_SPECS[binding] || ACTION_SPECS[binding] || null;
   }
   if (typeof binding === 'object') {
     if (binding.type === 'mouse' && typeof binding.button === 'number') return binding;
     if (binding.type === 'mouse_point' && typeof binding.dir === 'string') return binding;
+    if (binding.type === 'action' && typeof binding.action === 'string') return binding;
     if (binding.keyCode != null) return binding;
   }
   return null;
@@ -82,6 +92,9 @@ export function formatSpec(spec) {
   }
   if (spec.type === 'mouse_point') {
     return { left: 'Aim ←', right: 'Aim →', up: 'Aim ↑', down: 'Aim ↓' }[spec.dir] || 'Aim';
+  }
+  if (spec.type === 'action') {
+    return { pause: 'Pause', menu: 'Menu' }[spec.action] || spec.action;
   }
   if (spec.code === 'Space') return 'Space';
   if (spec.code === 'Enter') return 'Enter';
@@ -105,3 +118,4 @@ export function specFromKeyboardEvent(ev) {
     keyCode: ev.keyCode || ev.which || 0,
   };
 }
+

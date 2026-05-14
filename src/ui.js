@@ -1,7 +1,7 @@
 // Settings panel: per-binding key remapping, touch overlay options,
 // and "edit layout" toggle for the touch overlay.
 
-import { formatSpec, KEY_SPECS, MOUSE_SPECS, MOUSE_POINT_SPECS, specFromKeyboardEvent } from './keys.js';
+import { formatSpec, KEY_SPECS, MOUSE_SPECS, MOUSE_POINT_SPECS, ACTION_SPECS, specFromKeyboardEvent } from './keys.js';
 
 // Bindings in storage are either null, a single spec, or an array of specs.
 function bindingSpecArray(v) {
@@ -317,6 +317,7 @@ export class SettingsUI {
     picker.appendChild(header);
 
     const sections = [
+      { label: 'Actions',  specs: [ACTION_SPECS.Pause, ACTION_SPECS.Menu] },
       { label: 'Mouse',    specs: [MOUSE_SPECS.MouseLeft, MOUSE_SPECS.MouseRight, MOUSE_SPECS.MouseMiddle] },
       { label: 'Aim',      specs: [MOUSE_POINT_SPECS.MousePointLeft, MOUSE_POINT_SPECS.MousePointRight, MOUSE_POINT_SPECS.MousePointUp, MOUSE_POINT_SPECS.MousePointDown] },
       { label: 'Arrows',   keys: ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'] },

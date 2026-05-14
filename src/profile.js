@@ -1,6 +1,6 @@
 // Profile schema, defaults, hashing, and localStorage persistence.
 
-import { KEY_SPECS } from './keys.js';
+import { KEY_SPECS, ACTION_SPECS } from './keys.js';
 
 export const SCHEMA_VERSION = 1;
 const STORAGE_PREFIX = 'fcp:profile:';
@@ -32,8 +32,8 @@ export function defaultProfile() {
         button_rb: KEY_SPECS.KeyE,
         button_lt: null,
         button_rt: null,
-        start: KEY_SPECS.Enter,
-        select: KEY_SPECS.Escape,
+        start:  ACTION_SPECS.Menu,
+        select: ACTION_SPECS.Pause,
       },
       axes: {
         left_stick:  { mode: 'dpad',  deadzone_enter: 0.5, deadzone_exit: 0.35 },
@@ -155,6 +155,13 @@ function migrateInPlace(profile) {
   const axes = profile?.profile?.axes;
   if (axes && !axes.right_stick) {
     axes.right_stick = { mode: 'off', deadzone: 0.18, radius: 1.2 };
+  }
+  // Migrate pre-action profiles: if start/select are still the old keyboard
+  // defaults, replace them with the new action bindings.
+  const gp = profile?.profile?.gamepad;
+  if (gp) {
+    if (gp.start?.code === 'Enter')  gp.start  = ACTION_SPECS.Menu;
+    if (gp.select?.code === 'Escape') gp.select = ACTION_SPECS.Pause;
   }
 }
 
