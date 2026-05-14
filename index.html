@@ -12,8 +12,8 @@
 <body>
   <header id="topbar">
     <div id="loader">
-      <label class="file-btn" for="file-input">Open SWF…</label>
-      <input type="file" id="file-input" accept=".swf,application/x-shockwave-flash" hidden />
+      <label class="file-btn" for="file-input">Open SWF / Archive…</label>
+      <input type="file" id="file-input" accept=".swf,.zip,application/x-shockwave-flash,application/zip" hidden />
       <input type="url" id="url-input" placeholder="…or paste a SWF URL" autocomplete="off" />
       <button id="load-url-btn" type="button">Load</button>
     </div>
@@ -34,7 +34,7 @@
       <div id="ruffle-host"></div>
       <div id="touch-overlay" hidden></div>
       <div id="empty-state">
-        <p>Drop a SWF here, or open one above.</p>
+        <p>Drop a SWF or Flashpoint archive (.zip) here, or open one above.</p>
         <button id="demo-btn" type="button">▶ Play the demo</button>
         <p class="hint" style="margin-top:0.8em">EZPlatformer · MIT · Adam Atomic</p>
       </div>

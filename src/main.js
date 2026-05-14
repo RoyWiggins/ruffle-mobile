@@ -10,6 +10,9 @@ import { GamepadHandler } from './gamepad.js';
 import { TouchOverlay } from './touch.js';
 import { SettingsUI } from './ui.js';
 import { readSwfDimensions } from './swf.js';
+import {
+  isFlashpointZip, loadFlashpointArchive, clearFlashpointCache,
+} from './flashpoint.js';
 
 const wrapper       = document.getElementById('player-wrapper');
 const ruffleHost    = document.getElementById('ruffle-host');
@@ -111,7 +114,7 @@ async function ensureRuffle() {
   throw new Error('Ruffle failed to load');
 }
 
-async function loadSwfFromBuffer(buf, label) {
+async function loadSwfFromBuffer(buf, label, swfUrl = null) {
   const [hash, dims] = await Promise.all([
     sha256Hex(buf),
     readSwfDimensions(buf).catch(() => null),
@@ -135,6 +138,9 @@ async function loadSwfFromBuffer(buf, label) {
 
   await player.load({
     data: buf,
+    // swfUrl tells Ruffle the SWF's original URL so relative loadMovie()
+    // calls resolve against the right origin and the SW can intercept them.
+    ...(swfUrl ? { url: swfUrl } : {}),
     letterbox: 'off',
     contextMenu: 'off', // never show Ruffle's right-click / long-press menu
     autoplay: 'on',     // user already clicked Open/Demo — skip click-to-play
@@ -275,12 +281,28 @@ function fitPlayer() {
 }
 
 async function loadFromFile(file) {
+  if (isFlashpointZip(file)) {
+    await loadFromZip(file);
+    return;
+  }
   try {
     const buf = await file.arrayBuffer();
     await loadSwfFromBuffer(buf, file.name);
   } catch (err) {
     console.error(err);
     showToast('Failed to load file: ' + err.message);
+  }
+}
+
+async function loadFromZip(file) {
+  showToast('Loading archive…', 30000);
+  try {
+    const { launchUrl, launchData } = await loadFlashpointArchive(file);
+    const label = launchUrl.split('/').pop() || file.name;
+    await loadSwfFromBuffer(launchData, label, launchUrl);
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to load archive: ' + err.message);
   }
 }
 
@@ -421,6 +443,7 @@ function clearSwf() {
   ruffleHost.innerHTML = '';
   currentProfile = defaultProfile();
   applyProfile();
+  clearFlashpointCache().catch(() => {});
   showToast('Cleared');
 }
 

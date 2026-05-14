@@ -1,12 +1,17 @@
-// Service worker that patches dead / CORS-blocked third-party SWF deps.
+// Service worker that:
+//   1. Serves files from a loaded Flashpoint archive (Cache API, "flashpoint-v1").
+//   2. Patches dead / CORS-blocked third-party SWF deps via the PATCHES table.
+//
+// Flashpoint archives are loaded by src/flashpoint.js, which populates the
+// "flashpoint-v1" cache with every file from the zip keyed by its
+// reconstructed URL (both http:// and https://, lowercased).  The SW checks
+// that cache first so the game's own HTTP requests are answered from the local
+// archive rather than the network.
 //
 // Some old Flash games (e.g. Neopets pterattack, Dubloon Disaster)
 // loadMovie() helpers from CDNs that either no longer respond, never sent
-// CORS headers, or that we don't want to rely on at all. We unconditionally
-// swap the request for a hand-built local stub SWF that satisfies the
-// structural checks the game performs (byte-loaded gate, a
-// _parent._parent.play() call, _level100.include.* helpers) without any
-// cross-origin fetch.
+// CORS headers, or that we don't want to rely on at all.  We unconditionally
+// swap the request for a hand-built local stub SWF.
 
 const SCOPE = self.registration.scope;
 const STUB_INCLUDE = new URL('demos/neopets-include-stub.swf', SCOPE).pathname;
@@ -28,25 +33,43 @@ const PATCHES = [
   { re: /\/transcontent\/gettranslationxml\.phtml(?:[?#].*)?$/i, xliff: true },
 ];
 
+const FLASHPOINT_CACHE_NAME = 'flashpoint-v1';
+
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
 self.addEventListener('fetch', (event) => {
-  const url = event.request.url;
+  event.respondWith(handleFetch(event.request));
+});
+
+async function handleFetch(request) {
+  const url = request.url;
+
+  // 1. Flashpoint archive cache (case-insensitive: all keys are lowercased).
+  //    Check both http and https variants since Ruffle may use either.
+  try {
+    const cache = await caches.open(FLASHPOINT_CACHE_NAME);
+    const urlLower = url.toLowerCase();
+    const cached = (await cache.match(urlLower))
+      || (await cache.match(urlLower.replace(/^https:\/\//, 'http://')))
+      || (await cache.match(urlLower.replace(/^http:\/\//, 'https://')));
+    if (cached) return cached;
+  } catch (_) {}
+
+  // 2. Stub patches for dead / CORS-blocked third-party deps.
   for (const p of PATCHES) {
     if (p.re.test(url)) {
       if (p.xliff) {
-        event.respondWith(Promise.resolve(new Response(XLIFF_STUB, {
+        return new Response(XLIFF_STUB, {
           status: 200,
           headers: { 'Content-Type': 'text/xml', 'Content-Length': String(XLIFF_STUB.length) },
-        })));
-      } else {
-        event.respondWith(
-          fetch(p.target, { cache: 'no-store' }).catch(() =>
-            new Response(new Uint8Array(), { status: 502 })),
-        );
+        });
       }
-      return;
+      return fetch(new URL(p.target, SCOPE).href, { cache: 'no-store' }).catch(() =>
+        new Response(new Uint8Array(), { status: 502 }));
     }
   }
-});
+
+  // 3. Normal network fetch.
+  return fetch(request);
+}
