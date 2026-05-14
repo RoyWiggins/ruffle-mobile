@@ -25,6 +25,7 @@
       <span id="input-mode" data-mode="keyboard" title="Active input mode">⌨</span>
       <button id="mute-btn" type="button" title="Mute audio" aria-pressed="false">🔊</button>
       <button class="fp-browse-trigger" type="button" title="Browse Flashpoint archive">⚡</button>
+      <button id="net-console-btn" type="button" title="Network console" aria-pressed="false">⑊</button>
       <button id="settings-btn" type="button" title="Mapping settings" aria-expanded="false">⚙</button>
       <button id="fullscreen-btn" type="button" title="Fullscreen">⛶</button>
     </div>
@@ -163,6 +164,15 @@
       <div id="fp-download-pct"></div>
       <button id="fp-download-cancel" type="button" class="secondary">Cancel</button>
     </div>
+  </div>
+
+  <!-- Network console (shows every cross-origin fetch Ruffle makes) -->
+  <div id="net-console" hidden>
+    <div id="net-console-header">
+      <span>Network</span>
+      <button id="net-console-clear" type="button" title="Clear log">Clear</button>
+    </div>
+    <div id="net-console-log"></div>
   </div>
 
   <script type="module" src="src/main.js"></script>

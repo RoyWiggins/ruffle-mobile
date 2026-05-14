@@ -8,6 +8,7 @@
 // onToast(msg: string, ms?: number) → void
 
 import { searchGames, getGameInfo, downloadZip } from './flashpoint-search.js';
+import { setLegacyServer } from './flashpoint.js';
 
 // onLoad(buf, title, launchCommand)  — caller unzips and plays
 // onLoadSwf(buf, title, url)          — caller plays SWF directly (legacy path)
@@ -161,6 +162,7 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast }) {
 
       if (zipUrl) {
         // Normal path: stream the full zip.
+        await setLegacyServer(null); // no legacy fallback for zip games
         setProgress(0, 'Downloading…');
         const buf = await downloadZip(zipUrl, (p) => setProgress(p), dlAbort.signal);
         if (dlAbort.signal.aborted) return;
@@ -168,7 +170,9 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast }) {
         onLoad(buf, game.title, launchCommand);
       } else if (legacyServer && launchCommand) {
         // Legacy path: no zip — fetch just the main SWF from the legacy server.
-        // Ancillary assets (bios, include, XLIFF) are covered by the SW stubs.
+        // Register the server in the cache so the SW proxies ALL ancillary
+        // cross-origin requests (level SWFs, assets, etc.) through it.
+        await setLegacyServer(legacyServer);
         setProgress(null, 'Downloading…');
         const swfUrl = new URL(launchCommand);
         const legacyUrl = legacyServer.replace(/\/$/, '')

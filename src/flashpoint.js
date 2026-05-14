@@ -90,6 +90,21 @@ export async function loadFlashpointArchive(source, hintLaunchCommand = null) {
   return { launchUrl: launch.url, launchData: launch.data };
 }
 
+// Stores the legacy-server base URL in the cache so the service worker can
+// use it to proxy ancillary requests for games that have no zip archive.
+// Pass null to remove it (e.g. when loading a zip game).
+const LEGACY_KEY = 'https://flashpoint.internal/legacy-server';
+export async function setLegacyServer(url) {
+  try {
+    const cache = await caches.open(FLASHPOINT_CACHE_NAME);
+    if (url) {
+      await cache.put(LEGACY_KEY, new Response(url, { status: 200 }));
+    } else {
+      await cache.delete(LEGACY_KEY);
+    }
+  } catch (_) {}
+}
+
 // Removes all entries from the flashpoint cache (call when closing a game).
 export async function clearFlashpointCache() {
   try {
