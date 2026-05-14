@@ -123,6 +123,8 @@ function makeResponse(data, mime) {
     headers: {
       'Content-Type': mime,
       'Content-Length': String(data.length),
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD',
     },
   });
 }

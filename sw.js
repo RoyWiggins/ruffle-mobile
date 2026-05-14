@@ -2,7 +2,7 @@
 //   1. Serves files from a loaded Flashpoint archive (Cache API, "flashpoint-v1").
 //   2. Falls back to the Flashpoint legacy server for games without a zip.
 //   3. Patches dead / CORS-blocked third-party SWF deps via the PATCHES table.
-//   4. Broadcasts every cross-origin fetch event to page clients so the
+//   4. Broadcasts every handled fetch event to page clients so the
 //      in-app network console can show what Ruffle is requesting.
 
 const SCOPE = self.registration.scope;
@@ -44,7 +44,7 @@ async function handleFetch(request) {
       || (await cache.match(urlLower.replace(/^https:\/\//, 'http://')))
       || (await cache.match(urlLower.replace(/^http:\/\//, 'https://')));
     if (cached) {
-      if (isCrossOrigin) broadcast({ url, via: 'archive', status: 200 });
+      broadcast({ url, via: 'archive', status: 200 });
       return cached;
     }
   } catch (_) {}
@@ -52,15 +52,35 @@ async function handleFetch(request) {
   // 2. Stub patches for dead / CORS-blocked third-party deps.
   for (const p of PATCHES) {
     if (p.re.test(url)) {
-      if (isCrossOrigin) broadcast({ url, via: p.via, status: 200 });
+      broadcast({ url, via: p.via, status: 200 });
       if (p.xliff) {
         return new Response(XLIFF_STUB, {
           status: 200,
-          headers: { 'Content-Type': 'text/xml', 'Content-Length': String(XLIFF_STUB.length) },
+          headers: {
+            'Content-Type': 'text/xml',
+            'Content-Length': String(XLIFF_STUB.length),
+            'Access-Control-Allow-Origin': '*',
+          },
         });
       }
-      return fetch(new URL(p.target, SCOPE).href, { cache: 'no-store' }).catch(() =>
-        new Response(new Uint8Array(), { status: 502 }));
+      // Fetch the stub SWF from our own origin and re-wrap with CORS headers
+      // so cross-origin mode: 'cors' requests (from Ruffle) accept the response.
+      try {
+        const r = await fetch(new URL(p.target, SCOPE).href, { cache: 'no-store' });
+        if (r.ok) {
+          return new Response(await r.arrayBuffer(), {
+            status: 200,
+            headers: {
+              'Content-Type': r.headers.get('Content-Type') || 'application/x-shockwave-flash',
+              'Access-Control-Allow-Origin': '*',
+            },
+          });
+        }
+      } catch (_) {}
+      return new Response(new Uint8Array(), {
+        status: 502,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      });
     }
   }
 
