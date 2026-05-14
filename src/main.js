@@ -11,7 +11,7 @@ import { TouchOverlay } from './touch.js';
 import { SettingsUI } from './ui.js';
 import { readSwfDimensions } from './swf.js';
 import {
-  isFlashpointZip, loadFlashpointArchive, clearFlashpointCache,
+  isFlashpointZip, loadFlashpointArchive, clearFlashpointCache, setLegacyServer,
 } from './flashpoint.js';
 import { initFlashpointBrowser } from './flashpoint-browser.js';
 
@@ -467,6 +467,7 @@ function clearSwf() {
   currentProfile = defaultProfile();
   applyProfile();
   clearFlashpointCache().catch(() => {});
+  setLegacyServer(null).catch(() => {});
   showToast('Cleared');
 }
 
@@ -627,6 +628,49 @@ initFlashpointBrowser({
 if ('serviceWorker' in navigator) {
   const swUrl = new URL('sw.js', document.baseURI).toString();
   navigator.serviceWorker.register(swUrl).catch(() => {});
+
+  navigator.serviceWorker.addEventListener('message', (ev) => {
+    if (ev.data?.type === 'fp-fetch') appendNetEntry(ev.data);
+  });
+}
+
+// ── Network console ──────────────────────────────────────────────────────
+const netConsolePanel = document.getElementById('net-console');
+const netConsoleLog   = document.getElementById('net-console-log');
+const netConsoleBtn   = document.getElementById('net-console-btn');
+const netConsoleClear = document.getElementById('net-console-clear');
+
+netConsoleBtn.addEventListener('click', () => {
+  const open = netConsolePanel.hidden;
+  netConsolePanel.hidden = !open;
+  netConsoleBtn.setAttribute('aria-pressed', String(open));
+});
+netConsoleClear.addEventListener('click', () => { netConsoleLog.innerHTML = ''; });
+
+function appendNetEntry({ url, via, status }) {
+  const row = document.createElement('div');
+  row.className = 'net-entry';
+
+  const viaEl = document.createElement('span');
+  const viaClass = via.startsWith('stub:') ? 'stub' : via;
+  viaEl.className = 'net-via net-via-' + viaClass;
+  viaEl.textContent = via;
+
+  const statusEl = document.createElement('span');
+  const statusOk = status >= 200 && status < 300;
+  statusEl.className = 'net-status' + (status === null ? '' : statusOk ? ' net-status-ok' : ' net-status-err');
+  statusEl.textContent = status ?? '…';
+
+  const urlEl = document.createElement('span');
+  urlEl.className = 'net-url';
+  urlEl.textContent = url;
+  urlEl.title = url;
+
+  row.appendChild(viaEl);
+  row.appendChild(statusEl);
+  row.appendChild(urlEl);
+  netConsoleLog.appendChild(row);
+  netConsoleLog.scrollTop = netConsoleLog.scrollHeight;
 }
 ensureRuffle().catch(err => {
   console.error(err);
