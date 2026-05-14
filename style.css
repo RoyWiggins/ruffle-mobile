@@ -114,7 +114,8 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   cursor: pointer;
 }
 #demo-btn:hover { filter: brightness(1.1); }
-#player-wrapper.has-swf #empty-state { display: none; }
+#player-wrapper.has-swf #empty-state,
+#player-wrapper.is-loading #empty-state { display: none; }
 #player-wrapper.drag-over { outline: 3px dashed var(--accent); outline-offset: -8px; }
 
 #toast {

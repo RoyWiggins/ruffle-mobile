@@ -146,6 +146,7 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast }) {
   // ---------- Game selection → download → load ----------
 
   async function selectGame(game) {
+    history.replaceState(null, '', '?fp=' + encodeURIComponent(game.id));
     close();
 
     dlTitle.textContent = game.title;
@@ -218,4 +219,10 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast }) {
       dlPct.textContent = Math.round(fraction * 100) + '%';
     }
   }
+
+  return {
+    // Load a Flashpoint game by UUID directly, skipping the search UI.
+    // Used by the deep-link boot path.
+    loadById: (id) => selectGame({ id, title: '' }),
+  };
 }
