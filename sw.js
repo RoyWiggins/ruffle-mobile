@@ -104,9 +104,23 @@ async function handleFetch(request) {
     } catch (_) {}
   }
 
-  // 4. Normal network pass-through.
-  if (isCrossOrigin) broadcast({ url, via: 'network', status: null });
-  return fetch(request);
+  // 4. Normal network pass-through for cross-origin requests.
+  if (isCrossOrigin) {
+    broadcast({ url, via: 'network', status: null });
+    return fetch(request);
+  }
+
+  // 5. Same-origin pass-through. Broadcast failures on game-like extensions so
+  //    the console reveals assets the game tried to load from the wrong base URL
+  //    (e.g. relative loadMovie paths when no base was set on player.load).
+  const sameResp = await fetch(request).catch(() => null);
+  if (!sameResp || !sameResp.ok) {
+    const ext = new URL(url).pathname.split('.').pop().toLowerCase();
+    if (/^(swf|mp3|xml|flv|jpg|jpeg|png|gif|json|csv)$/.test(ext)) {
+      broadcast({ url, via: 'miss', status: sameResp ? sameResp.status : null });
+    }
+  }
+  return sameResp || new Response('', { status: 502 });
 }
 
 // Notify all controlled page clients about a handled fetch (for the console).

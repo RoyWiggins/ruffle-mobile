@@ -482,6 +482,7 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 .net-via-legacy  { color: #facc15; }
 .net-via-network { color: #94a3b8; }
 .net-via-stub    { color: #c084fc; }
+.net-via-miss    { color: #f87171; }
 .net-status {
   flex-shrink: 0; color: var(--muted); min-width: 2.5em; text-align: right;
 }
