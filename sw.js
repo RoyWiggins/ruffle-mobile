@@ -99,7 +99,14 @@ async function handleFetch(request) {
         const proxied    = PROXY_BASE + encodeURIComponent(legacyUrl);
         const res        = await fetch(proxied);
         broadcast({ url, via: 'legacy', status: res.status });
-        if (res.ok) return res;
+        if (res.ok) {
+          // Re-wrap headers so Ruffle can always read the body regardless of
+          // whether the proxy forwarded CORS headers from the origin server.
+          const headers = new Headers(res.headers);
+          headers.set('Access-Control-Allow-Origin', '*');
+          headers.set('Access-Control-Allow-Methods', 'GET, HEAD');
+          return new Response(res.body, { status: res.status, headers });
+        }
       }
     } catch (_) {}
   }
@@ -116,7 +123,7 @@ async function handleFetch(request) {
   const sameResp = await fetch(request).catch(() => null);
   if (!sameResp || !sameResp.ok) {
     const ext = new URL(url).pathname.split('.').pop().toLowerCase();
-    if (/^(swf|mp3|xml|flv|jpg|jpeg|png|gif|json|csv)$/.test(ext)) {
+    if (/^(swf|mp3|xml|flv|jpg|jpeg|png|gif|json|csv|txt)$/.test(ext)) {
       broadcast({ url, via: 'miss', status: sameResp ? sameResp.status : null });
     }
   }
