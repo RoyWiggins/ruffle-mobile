@@ -76,7 +76,8 @@ function applyProfile() {
   touch.render();
   applyTouchVisibility();
   fitPlayer();
-  if (currentProfile.swf_sha256) {
+  const hasGame = !!currentProfile.swf_sha256;
+  if (hasGame) {
     swfNameEl.textContent = currentProfile.label || ('Profile ' + currentProfile.swf_sha256.slice(0, 8));
     loaderEl.hidden = true;
     currentSwfEl.hidden = false;
@@ -84,6 +85,7 @@ function applyProfile() {
     loaderEl.hidden = false;
     currentSwfEl.hidden = true;
   }
+  document.getElementById('status-browse-btn').hidden = hasGame;
 }
 
 function applyTouchVisibility() {
