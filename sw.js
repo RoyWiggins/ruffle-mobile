@@ -69,7 +69,11 @@ async function handleFetch(request) {
         const proxied    = PROXY_BASE + encodeURIComponent(legacyUrl);
         const res        = await fetch(proxied);
         broadcast({ url, via: 'legacy', status: res.status });
-        if (res.ok) {
+        // Skip HTML responses: the proxy or legacy server returned an error page
+        // with 200 status (catch-all route). Falling through lets the real CDN
+        // serve the file, which is critical for Ruffle WASM chunk requests.
+        const ct = res.headers.get('Content-Type') || '';
+        if (res.ok && !ct.startsWith('text/html')) {
           // Re-wrap headers so Ruffle can always read the body regardless of
           // whether the proxy forwarded CORS headers from the origin server.
           const headers = new Headers(res.headers);
@@ -120,7 +124,7 @@ async function handleFetch(request) {
   // 4. Normal network pass-through for cross-origin requests.
   if (isCrossOrigin) {
     broadcast({ url, via: 'network', status: null });
-    return fetch(request);
+    return fetch(request).catch(() => new Response('', { status: 502 }));
   }
 
   // 5. Same-origin pass-through. Broadcast failures on game-like extensions so
