@@ -36,6 +36,7 @@ const LEGACY_KEY   = 'https://flashpoint.internal/legacy-server';
 const PROXY_BASE   = 'https://scratch-blnn7.sprites.app/cors-proxy/?url=';
 
 const SCOPE_ORIGIN = new URL(SCOPE).origin;
+const SCOPE_PATH   = new URL(SCOPE).pathname; // e.g. '/ruffle-mobile/'
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
@@ -178,12 +179,36 @@ async function handleFetch(request) {
     }
   }
 
-  // 5. Same-origin pass-through. Broadcast failures on game-like extensions so
-  //    the console reveals assets the game tried to load from the wrong base URL
-  //    (e.g. relative loadMovie paths when no base was set on player.load).
+  // 5. Same-origin pass-through. Game SWFs sometimes resolve relative asset
+  //    URLs against the page origin rather than their own CDN URL, producing
+  //    same-origin requests like /ruffle-mobile/g1305/claw_assets_v8.swf that
+  //    will never exist on this server. For game-asset extensions, search the
+  //    archive cache by path suffix before hitting the network.
+  const reqPathname = new URL(url).pathname;
+  const ext = reqPathname.split('.').pop().toLowerCase();
+  if (/^(swf|mp3|xml|flv|jpg|jpeg|png|gif|json|csv|txt)$/.test(ext)) {
+    const relPath = reqPathname.slice(SCOPE_PATH.length);
+    if (relPath) {
+      try {
+        const cache  = await caches.open(CACHE_NAME);
+        const suffix = '/' + relPath;
+        for (const req of await cache.keys()) {
+          if (req.url.endsWith(suffix)) {
+            const cached = await cache.match(req);
+            if (cached) {
+              broadcast({ url, via: 'archive-relative', status: 200 });
+              const h = new Headers(cached.headers);
+              h.set('Access-Control-Allow-Origin', '*');
+              h.set('Access-Control-Allow-Methods', 'GET, HEAD');
+              return new Response(cached.body, { status: cached.status, headers: h });
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }
   const sameResp = await fetch(request).catch(() => null);
   if (!sameResp || !sameResp.ok) {
-    const ext = new URL(url).pathname.split('.').pop().toLowerCase();
     if (/^(swf|mp3|xml|flv|jpg|jpeg|png|gif|json|csv|txt)$/.test(ext)) {
       broadcast({ url, via: 'miss', status: sameResp ? sameResp.status : null });
     }

@@ -332,16 +332,33 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   z-index: 110;
 }
 #fp-panel-header {
-  display: flex; align-items: center; gap: 0.5em;
-  padding: 0.45em 0.6em;
+  display: flex; flex-direction: column;
   background: var(--panel); border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+#fp-search-top {
+  display: flex; align-items: center; gap: 0.5em;
+  padding: 0.45em 0.6em;
 }
 #fp-panel-close {
   background: transparent; color: var(--fg);
   padding: 0.45em 0.6em; font-size: 1.15em; flex-shrink: 0;
 }
 #fp-search-row { display: flex; gap: 0.4em; flex: 1; min-width: 0; }
+#fp-filter-row {
+  display: flex; flex-wrap: wrap; gap: 0.35em;
+  padding: 0 0.6em 0.5em;
+}
+.fp-filter-btn {
+  font-size: 0.8em; padding: 0.3em 0.75em; min-height: 0;
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 999px; color: var(--fg); cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.fp-filter-btn:hover, .fp-filter-btn:focus-visible {
+  border-color: var(--accent); background: var(--panel);
+  outline: none;
+}
 #fp-search-input {
   flex: 1; min-width: 0;
   background: #111; border: 1px solid var(--border);

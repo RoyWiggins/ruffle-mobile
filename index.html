@@ -132,14 +132,20 @@
   <!-- Flashpoint game browser panel -->
   <aside id="fp-panel" hidden aria-label="Browse Flashpoint">
     <header id="fp-panel-header">
-      <button id="fp-panel-close" type="button" aria-label="Close">✕</button>
-      <div id="fp-search-row">
-        <input type="search" id="fp-search-input"
-               placeholder="Search Flashpoint games…"
-               autocomplete="off" autocorrect="off"
-               autocapitalize="none" spellcheck="false"
-               enterkeyhint="search" />
-        <button id="fp-search-btn" type="button">Search</button>
+      <div id="fp-search-top">
+        <button id="fp-panel-close" type="button" aria-label="Close">✕</button>
+        <div id="fp-search-row">
+          <input type="search" id="fp-search-input"
+                 placeholder="Search Flashpoint games…"
+                 autocomplete="off" autocorrect="off"
+                 autocapitalize="none" spellcheck="false"
+                 enterkeyhint="search" />
+          <button id="fp-search-btn" type="button">Search</button>
+        </div>
+      </div>
+      <div id="fp-filter-row">
+        <button class="fp-filter-btn" type="button"
+          data-query="neopets tag=Neopets -tag=Promotional -tag=Christmastide -tag=Informative -tag=Loop -tag=Tutorial -tag=Other -tag=Comic -tag=Advertisement -tag=Microsite -tag=&quot;Max Keeble's Big Move&quot; -tag=Digimon">Neopets</button>
       </div>
     </header>
     <div id="fp-results-wrap">
