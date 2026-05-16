@@ -6,8 +6,9 @@
 //      in-app network console can show what Ruffle is requesting.
 
 const SCOPE = self.registration.scope;
-const STUB_INCLUDE = new URL('demos/neopets-include-stub.swf', SCOPE).pathname;
-const STUB_BIOS    = new URL('demos/neopets-bios-stub.swf',    SCOPE).pathname;
+const STUB_INCLUDE = new URL('demos/neopets-include-stub.swf',         SCOPE).pathname;
+const STUB_BIOS    = new URL('demos/neopets-bios-stub.swf',            SCOPE).pathname;
+const STUB_NP9_GS  = new URL('demos/neopets-gaming-system-stub.swf',   SCOPE).pathname;
 
 
 // Flash's XMLDocument stores <?xml?> in xmlDecl and <!DOCTYPE> in docTypeDecl —
@@ -23,7 +24,8 @@ const XLIFF_STUB = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE xliff PUBL
 
 const PATCHES = [
   { re: /\/games\/utilities\/flash_bios\/bios\.swf(?:[?#].*)?$/i,          target: STUB_BIOS,    via: 'stub:bios' },
-  { re: /\/games\/gaming_system\/np\d+_include_v\d+\.swf(?:[?#].*)?$/i,    target: STUB_INCLUDE, via: 'stub:include' },
+  { re: /\/games\/gaming_system\/np\d+_gaming_system_v\d+\.swf(?:[?#].*)?$/i, target: STUB_NP9_GS,  via: 'stub:gaming-system' },
+  { re: /\/games\/gaming_system\/np\d+_include_v\d+\.swf(?:[?#].*)?$/i,      target: STUB_INCLUDE, via: 'stub:include' },
   { re: /\/games\/high_scores\/include_movie\.swf(?:[?#].*)?$/i,           target: STUB_INCLUDE, via: 'stub:include' },
   { re: /\/transcontent\/gettranslationxml\.phtml(?:[?#].*)?$/i, xliff: true, via: 'stub:xliff' },
 ];
