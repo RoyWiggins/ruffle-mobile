@@ -9,7 +9,14 @@ const SCOPE = self.registration.scope;
 const STUB_INCLUDE = new URL('demos/neopets-include-stub.swf', SCOPE).pathname;
 const STUB_BIOS    = new URL('demos/neopets-bios-stub.swf',    SCOPE).pathname;
 
-const XLIFF_STUB = '<?xml version="1.0"?><xliff version="1.0"><file><body></body></file></xliff>';
+// NP9_Translator.completeHandler navigates by fixed child indices:
+//   doc.childNodes[2]      → xliff element
+//   xliff.childNodes[1]    → file element
+//   file.childNodes[3]     → body element
+// Flash's XMLDocument counts the <?xml?> PI as childNodes[0] and every
+// whitespace-only text node between tags as a child, so the layout below
+// puts nodes exactly where the parser expects them.
+const XLIFF_STUB = '<?xml version="1.0"?>\n<xliff version="1.0">\n<file>\n<header></header>\n<body>\n</body>\n</file>\n</xliff>';
 
 const PATCHES = [
   { re: /\/games\/utilities\/flash_bios\/bios\.swf(?:[?#].*)?$/i,          target: STUB_BIOS,    via: 'stub:bios' },
