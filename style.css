@@ -123,6 +123,24 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 #player-wrapper.is-loading #empty-state { display: none; }
 #player-wrapper.drag-over { outline: 3px dashed var(--accent); outline-offset: -8px; }
 
+#side-controls {
+  display: none;
+  position: absolute; right: 0.4em; top: 50%; transform: translateY(-50%);
+  flex-direction: column; gap: 0.35em; z-index: 10;
+}
+#player-wrapper.has-swf #side-controls { display: flex; }
+#side-controls button {
+  background: rgba(0,0,0,0.45); color: #fff;
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;
+  width: 2.4em; height: 2.4em; font-size: 1.1em;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  opacity: 0.55; transition: opacity 0.15s;
+}
+#side-controls button:hover,
+#side-controls button:focus-visible { opacity: 1; outline: none; }
+
+
 #toast {
   position: absolute; bottom: 1em; left: 50%; transform: translateX(-50%);
   background: rgba(0,0,0,0.8); color: white;
