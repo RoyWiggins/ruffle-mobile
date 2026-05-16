@@ -85,7 +85,6 @@ function applyProfile() {
     loaderEl.hidden = false;
     currentSwfEl.hidden = true;
   }
-  document.getElementById('status-browse-btn').hidden = hasGame;
 }
 
 function applyTouchVisibility() {
