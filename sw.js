@@ -211,17 +211,24 @@ async function handleFetch(request) {
     if (relPath) {
       try {
         const cache  = await caches.open(CACHE_NAME);
-        const suffix = '/' + relPath;
+        const suffix   = '/' + relPath;
+        const filename = '/' + relPath.split('/').pop();
+        let exactMatch = null, nameMatch = null;
         for (const req of await cache.keys()) {
-          if (req.url.endsWith(suffix)) {
-            const cached = await cache.match(req);
-            if (cached) {
-              broadcast({ url, via: 'archive-relative', status: 200 });
-              const h = new Headers(cached.headers);
-              h.set('Access-Control-Allow-Origin', '*');
-              h.set('Access-Control-Allow-Methods', 'GET, HEAD');
-              return new Response(cached.body, { status: cached.status, headers: h });
-            }
+          const cu = req.url.split('?')[0];
+          if (!exactMatch && cu.endsWith(suffix))   exactMatch = req.url;
+          if (!nameMatch  && cu.endsWith(filename))  nameMatch  = req.url;
+          if (exactMatch && nameMatch) break;
+        }
+        const match = exactMatch || nameMatch;
+        if (match) {
+          const cached = await cache.match(match);
+          if (cached) {
+            broadcast({ url, via: 'archive-relative', status: 200 });
+            const h = new Headers(cached.headers);
+            h.set('Access-Control-Allow-Origin', '*');
+            h.set('Access-Control-Allow-Methods', 'GET, HEAD');
+            return new Response(cached.body, { status: cached.status, headers: h });
           }
         }
       } catch (_) {}

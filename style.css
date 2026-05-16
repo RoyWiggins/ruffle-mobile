@@ -58,13 +58,18 @@ button.danger { background: var(--danger); }
 #current-swf .swf-close { color: var(--muted); font-size: 1em; line-height: 1; }
 #current-swf:hover { border-color: var(--accent); }
 #current-swf:hover .swf-close { color: var(--danger); }
+.browse-btn {
+  background: var(--accent); color: var(--accent-fg);
+  padding: 0.4em 1em; border-radius: 4px; font-weight: 600;
+  white-space: nowrap;
+}
 .file-btn {
   display: inline-flex; align-items: center;
   padding: 0.4em 0.8em;
-  background: var(--accent); color: var(--accent-fg);
+  background: var(--panel-2); color: var(--fg);
+  border: 1px solid var(--border);
   border-radius: 4px; cursor: pointer; white-space: nowrap;
 }
-#url-input { flex: 1; min-width: 0; }
 #status { display: flex; gap: 0.5em; align-items: center; font-size: 0.9em; }
 #input-mode { font-size: 1.2em; opacity: 0.55; transition: opacity 0.2s; }
 #input-mode.active { opacity: 1; }
@@ -476,7 +481,7 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   display: flex; justify-content: space-between; align-items: center;
   padding: 0.3em 0.6em;
   background: var(--panel-2); border-bottom: 1px solid var(--border);
-  flex-shrink: 0; color: var(--muted);
+  flex-shrink: 0; color: var(--muted); cursor: pointer;
 }
 #net-console-clear {
   background: transparent; color: var(--muted);

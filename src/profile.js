@@ -45,8 +45,7 @@ export function defaultProfile() {
         layouts: defaultTouchLayouts(),
       },
       display: {
-        // 'auto' = top in portrait, center in landscape.
-        align: 'auto',
+        align: 'center',
         // Additional per-orientation offset, in fractions of the wrapper.
         // Set in edit mode by dragging the game.
         offsets: {

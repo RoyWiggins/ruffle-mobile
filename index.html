@@ -12,10 +12,9 @@
 <body>
   <header id="topbar">
     <div id="loader">
-      <label class="file-btn" for="file-input">Open SWF / Archive…</label>
+      <button class="fp-browse-trigger browse-btn" type="button">Browse</button>
+      <label class="file-btn" for="file-input">File</label>
       <input type="file" id="file-input" accept=".swf,.zip,application/x-shockwave-flash,application/zip" hidden />
-      <input type="url" id="url-input" placeholder="…or paste a SWF URL" autocomplete="off" />
-      <button id="load-url-btn" type="button">Load</button>
     </div>
     <button id="current-swf" type="button" hidden title="Tap to close the current SWF">
       <span class="swf-name"></span>

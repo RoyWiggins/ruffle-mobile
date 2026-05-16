@@ -21,8 +21,6 @@ const ruffleHost    = document.getElementById('ruffle-host');
 const touchEl       = document.getElementById('touch-overlay');
 const toast         = document.getElementById('toast');
 const fileInput     = document.getElementById('file-input');
-const urlInput      = document.getElementById('url-input');
-const loadUrlBtn    = document.getElementById('load-url-btn');
 const demoBtn       = document.getElementById('demo-btn');
 const loaderEl     = document.getElementById('loader');
 const currentSwfEl = document.getElementById('current-swf');
@@ -182,7 +180,23 @@ function getDisplayOffset() {
   return d.offsets[currentOrientation()] || { dx: 0, dy: 0 };
 }
 
+// Physical keyboard detection: desktop always qualifies; on mobile we listen
+// for a trusted keydown that did not originate from a touch interaction.
+let physicalKeyboard = !!window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+if (!physicalKeyboard) {
+  document.addEventListener('keydown', (ev) => {
+    if (ev.isTrusted && !physicalKeyboard) {
+      const caps = ev.sourceCapabilities;
+      if (!caps || caps.firesTouchEvents === false) {
+        physicalKeyboard = true;
+        fitPlayer();
+      }
+    }
+  }, { capture: true, passive: true });
+}
+
 function getReservedBottom() {
+  if (physicalKeyboard) return 0;
   return clamp01(globalReserved[currentOrientation()] || 0);
 }
 
@@ -308,6 +322,8 @@ async function loadFromZip(file) {
   await loadFromFlashpointBuffer(await file.arrayBuffer(), file.name, null);
 }
 
+let loadedFromFlashpoint = false;
+
 // Shared entry point used by both file-upload and browser-download paths.
 async function loadFromFlashpointBuffer(buf, title, launchCommand) {
   wrapper.classList.add('is-loading');
@@ -315,6 +331,8 @@ async function loadFromFlashpointBuffer(buf, title, launchCommand) {
   try {
     const { launchUrl, launchData } = await loadFlashpointArchive(buf, launchCommand);
     const label = title || launchUrl.split('/').pop();
+    loadedFromFlashpoint = true;
+    if (label) document.title = label;
     await loadSwfFromBuffer(launchData, label, launchUrl);
   } catch (err) {
     wrapper.classList.remove('is-loading');
@@ -344,17 +362,6 @@ fileInput.addEventListener('change', () => {
   const f = fileInput.files?.[0];
   if (f) loadFromFile(f);
   fileInput.value = '';
-});
-
-loadUrlBtn.addEventListener('click', () => {
-  const u = urlInput.value.trim();
-  if (u) loadFromUrl(u);
-});
-urlInput.addEventListener('keydown', (ev) => {
-  if (ev.key === 'Enter') {
-    const u = urlInput.value.trim();
-    if (u) loadFromUrl(u);
-  }
 });
 
 settingsBtn.addEventListener('click', () => {
@@ -478,7 +485,11 @@ function clearSwf() {
   clearFlashpointCache().catch(() => {});
   setLegacyServer(null).catch(() => {});
   history.replaceState(null, '', location.pathname);
-  showToast('Cleared');
+  document.title = 'Flash Controller Player';
+  const wasFlashpoint = loadedFromFlashpoint;
+  loadedFromFlashpoint = false;
+  if (wasFlashpoint) fpBrowser.open();
+  else showToast('Cleared');
 }
 
 let doneEditBtn = null;
@@ -661,6 +672,11 @@ netConsoleBtn.addEventListener('click', () => {
   const open = netConsolePanel.hidden;
   netConsolePanel.hidden = !open;
   netConsoleBtn.setAttribute('aria-pressed', String(open));
+});
+document.getElementById('net-console-header').addEventListener('click', (ev) => {
+  if (ev.target.closest('#net-console-clear')) return;
+  netConsolePanel.hidden = true;
+  netConsoleBtn.setAttribute('aria-pressed', 'false');
 });
 netConsoleClear.addEventListener('click', () => { netConsoleLog.innerHTML = ''; });
 
