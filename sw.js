@@ -27,7 +27,7 @@ const PATCHES = [
   { re: /\/games\/gaming_system\/np\d+_gaming_system_v\d+\.swf(?:[?#].*)?$/i, target: STUB_NP9_GS,  via: 'stub:gaming-system' },
   { re: /\/games\/gaming_system\/np\d+_include_v\d+\.swf(?:[?#].*)?$/i,      target: STUB_INCLUDE, via: 'stub:include' },
   { re: /\/games\/high_scores\/include_movie\.swf(?:[?#].*)?$/i,           target: STUB_INCLUDE, via: 'stub:include' },
-  { re: /\/transcontent\/gettranslationxml\.phtml(?:[?#].*)?$/i, xliff: true, via: 'stub:xliff' },
+  { re: /\/gettranslationxml\.phtml(?:[?#].*)?$/i, xliff: true, via: 'stub:xliff' },
 ];
 
 const CACHE_NAME   = 'flashpoint-v1';
