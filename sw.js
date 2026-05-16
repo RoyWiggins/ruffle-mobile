@@ -85,7 +85,29 @@ async function handleFetch(request) {
     } catch (_) {}
   }
 
-  // 3. Stub patches for dead / CORS-blocked third-party deps (fallback when
+  // 3. Neopets numbered-CDN fallback: images1..imagesNN.neopets.com are load-
+  //    balanced nodes that time out when offline. Re-fetch from images.neopets.com
+  //    via the CORS proxy, which is reachable and serves the same files.
+  if (isCrossOrigin) {
+    const reqUrl = new URL(url);
+    if (/^images\d+\.neopets\.com$/i.test(reqUrl.hostname)) {
+      try {
+        const fallback = url.replace(reqUrl.hostname, 'images.neopets.com');
+        const proxied  = PROXY_BASE + encodeURIComponent(fallback);
+        const res      = await fetch(proxied);
+        const ct       = res.headers.get('Content-Type') || '';
+        if (res.ok && !ct.startsWith('text/html')) {
+          broadcast({ url, via: 'cdn-fallback', status: res.status });
+          const headers = new Headers(res.headers);
+          headers.set('Access-Control-Allow-Origin', '*');
+          headers.set('Access-Control-Allow-Methods', 'GET, HEAD');
+          return new Response(res.body, { status: res.status, headers });
+        }
+      } catch (_) {}
+    }
+  }
+
+  // 4. Stub patches for dead / CORS-blocked third-party deps (fallback when
   //    the legacy server doesn't have the file).
   for (const p of PATCHES) {
     if (p.re.test(url)) {
