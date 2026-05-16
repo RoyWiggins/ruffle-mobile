@@ -329,14 +329,21 @@ let loadedFromFlashpoint = false;
 async function loadFromFlashpointBuffer(buf, title, launchCommand) {
   wrapper.classList.add('is-loading');
   showToast('Loading archive…', 30000);
+  // Flip the topbar immediately so it looks the same during loading as when loaded.
+  loaderEl.hidden = true;
+  currentSwfEl.hidden = false;
+  swfNameEl.textContent = title || '…';
   try {
     const { launchUrl, launchData } = await loadFlashpointArchive(buf, launchCommand);
     const label = title || launchUrl.split('/').pop();
     loadedFromFlashpoint = true;
     if (label) document.title = label;
+    swfNameEl.textContent = label;
     await loadSwfFromBuffer(launchData, label, launchUrl);
   } catch (err) {
     wrapper.classList.remove('is-loading');
+    loaderEl.hidden = false;
+    currentSwfEl.hidden = true;
     console.error(err);
     showToast('Failed to load archive: ' + err.message);
   }
