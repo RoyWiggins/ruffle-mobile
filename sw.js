@@ -122,9 +122,23 @@ async function handleFetch(request) {
   }
 
   // 4. Normal network pass-through for cross-origin requests.
+  //    Re-wrap with CORS headers when missing so Ruffle can read responses
+  //    from game servers that don't set Access-Control-Allow-Origin
+  //    (e.g. swf.neopets.com returning bios.swf with status 200, no CORS).
   if (isCrossOrigin) {
     broadcast({ url, via: 'network', status: null });
-    return fetch(request).catch(() => new Response('', { status: 502 }));
+    try {
+      const resp = await fetch(request);
+      if (!resp.headers.has('Access-Control-Allow-Origin')) {
+        const h = new Headers(resp.headers);
+        h.set('Access-Control-Allow-Origin', '*');
+        h.set('Access-Control-Allow-Methods', 'GET, HEAD');
+        return new Response(resp.body, { status: resp.status, headers: h });
+      }
+      return resp;
+    } catch (_) {
+      return new Response('', { status: 502 });
+    }
   }
 
   // 5. Same-origin pass-through. Broadcast failures on game-like extensions so
