@@ -74,6 +74,13 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast }) {
   });
   loadMoreBtn.addEventListener('click', () => runSearch(currentQuery, currentPage + 1));
 
+  document.getElementById('fp-filter-row').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.fp-filter-btn');
+    if (!btn) return;
+    searchInput.value = btn.dataset.query;
+    triggerSearch();
+  });
+
   async function runSearch(query, page) {
     if (searching) return;
     searching = true;
