@@ -9,14 +9,17 @@ const SCOPE = self.registration.scope;
 const STUB_INCLUDE = new URL('demos/neopets-include-stub.swf', SCOPE).pathname;
 const STUB_BIOS    = new URL('demos/neopets-bios-stub.swf',    SCOPE).pathname;
 
-// NP9_Translator.completeHandler navigates by fixed child indices:
-//   doc.childNodes[2]      → xliff element
-//   xliff.childNodes[1]    → file element
-//   file.childNodes[3]     → body element
-// Flash's XMLDocument counts the <?xml?> PI as childNodes[0] and every
-// whitespace-only text node between tags as a child, so the layout below
-// puts nodes exactly where the parser expects them.
-const XLIFF_STUB = '<?xml version="1.0"?>\n<xliff version="1.0">\n<file>\n<header></header>\n<body>\n</body>\n</file>\n</xliff>';
+
+// Flash's XMLDocument stores <?xml?> in xmlDecl and <!DOCTYPE> in docTypeDecl —
+// neither appears in childNodes. The \n between each declaration and <xliff>
+// creates the text nodes NP9_Translator.completeHandler navigates by index:
+//   doc[0] = "\n"     (between xmlDecl and DOCTYPE)
+//   doc[1] = "\n"     (between DOCTYPE and <xliff>)
+//   doc[2] = xliff    ← _loc3_  ✓
+//   xliff[0]="\n "    xliff[1]=file           ← _loc4_  ✓
+//   file[0]="\n  "    file[1]=header
+//   file[2]="\n  "    file[3]=body            ← _loc5_  ✓
+const XLIFF_STUB = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE xliff PUBLIC "-//XLIFF//DTD XLIFF//EN" "http://www.oasis-open.org/committees/xliff/documents/xliff.dtd">\n<xliff version="1.0" xml:lang="en">\n <file datatype="plaintext" original="0" source-language="EN">\n  <header></header>\n  <body>\n  </body>\n </file>\n</xliff>';
 
 const PATCHES = [
   { re: /\/games\/utilities\/flash_bios\/bios\.swf(?:[?#].*)?$/i,          target: STUB_BIOS,    via: 'stub:bios' },
