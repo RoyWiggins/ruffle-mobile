@@ -126,6 +126,26 @@ async function handleFetch(request) {
     if (p.re.test(url)) {
       broadcast({ url, via: p.via, status: 200 });
       if (p.xliff) {
+        // Check the archive first — Flashpoint captures the real translation
+        // response under the CDN URL without query params. The game requests
+        // this with a query string and from the wrong origin, so exact-URL
+        // cache lookup misses; scan by filename instead.
+        try {
+          const cache    = await caches.open(CACHE_NAME);
+          const filename = '/' + new URL(url).pathname.split('/').pop();
+          for (const req of await cache.keys()) {
+            if (req.url.split('?')[0].endsWith(filename)) {
+              const cached = await cache.match(req.url);
+              if (cached) {
+                const h = new Headers(cached.headers);
+                h.set('Content-Type', 'text/xml');
+                h.set('Access-Control-Allow-Origin', '*');
+                h.set('Access-Control-Allow-Methods', 'GET, HEAD');
+                return new Response(cached.body, { status: cached.status, headers: h });
+              }
+            }
+          }
+        } catch (_) {}
         return new Response(XLIFF_STUB, {
           status: 200,
           headers: {
