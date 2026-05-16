@@ -228,6 +228,7 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast }) {
   }
 
   return {
+    open,
     // Load a Flashpoint game by UUID directly, skipping the search UI.
     // Used by the deep-link boot path.
     loadById: (id) => selectGame({ id, title: '' }),
