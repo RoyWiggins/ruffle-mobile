@@ -129,6 +129,9 @@ async function handleFetch(request) {
     broadcast({ url, via: 'network', status: null });
     try {
       const resp = await fetch(request);
+      // Opaque (no-cors) responses have status 0 and inaccessible body/headers;
+      // new Response(..., { status: 0 }) throws a RangeError, so pass them through.
+      if (resp.type === 'opaque') return resp;
       if (!resp.headers.has('Access-Control-Allow-Origin')) {
         const h = new Headers(resp.headers);
         h.set('Access-Control-Allow-Origin', '*');
