@@ -91,6 +91,8 @@ export class InputDispatcher {
       this.bindingToId.clear();
       this.refs.clear();
       this.pointCounts = { left: 0, right: 0, up: 0, down: 0 };
+      this.mouse.relVX = 0;
+      this.mouse.relVY = 0;
       this.mouse.releaseAll();
       return;
     }
@@ -98,6 +100,8 @@ export class InputDispatcher {
     this.bindingToId.clear();
     this.refs.clear();
     this.pointCounts = { left: 0, right: 0, up: 0, down: 0 };
+    this.mouse.relVX = 0;
+    this.mouse.relVY = 0;
     this.mouse.releaseAll();
   }
 
@@ -147,6 +151,21 @@ export class InputDispatcher {
     this.mouse.aimAt(sx, sy, r);
   }
 
+  // Radial: magnitude maps to distance from center (0 = center, 1 = orbit radius).
+  aimMouseRadial(sx, sy, r) {
+    this.mouse.aimAtRadial(sx, sy, r);
+  }
+
+  // Map normalized stick values [-1,1] directly to the stage bounding rect.
+  aimMouseAbsoluteNorm(nx, ny) {
+    this.mouse.aimAbsoluteNorm(nx, ny);
+  }
+
+  // Velocity-based relative mouse update. Called every frame.
+  updateRelativeMouse(ax, ay, cfg) {
+    return this.mouse.updateRelative(ax, ay, cfg);
+  }
+
   _dispatchKey(type, spec) {
     if (!this.host) return;
     try { this.host.focus({ preventScroll: true }); } catch (_) {}
@@ -181,6 +200,7 @@ export class MouseController {
     this.x = 0; this.y = 0;
     this.pressed = new Set(); // currently-held button numbers
     this._haveAimed = false;
+    this.relVX = 0; this.relVY = 0; // velocity for relative mode
   }
 
   setHost(el) {
@@ -212,6 +232,18 @@ export class MouseController {
     };
   }
 
+  // Radial mode: stick magnitude maps to distance (0 = center, 1 = orbit radius).
+  aimAtRadial(sx, sy, radius) {
+    if (!this.host) return;
+    const { cx, cy, half } = this._center();
+    const d = half * radius;
+    this.x = cx + sx * d;
+    this.y = cy + sy * d;
+    this._haveAimed = true;
+    this._dispatch('pointermove');
+    this._dispatch('mousemove');
+  }
+
   aimAt(sx, sy, radius) {
     if (!this.host) return;
     const mag = Math.hypot(sx, sy) || 1;
@@ -223,6 +255,75 @@ export class MouseController {
     this._haveAimed = true;
     this._dispatch('pointermove');
     this._dispatch('mousemove');
+  }
+
+  // Map normalized stick coords [-1,1] directly onto the stage bounding rect.
+  aimAbsoluteNorm(nx, ny) {
+    if (!this.host) return;
+    const t = this._target() || this.host;
+    if (!t) return;
+    const r = t.getBoundingClientRect();
+    this.x = r.left + (nx * 0.5 + 0.5) * r.width;
+    this.y = r.top  + (ny * 0.5 + 0.5) * r.height;
+    this._haveAimed = true;
+    this._dispatch('pointermove');
+    this._dispatch('mousemove');
+  }
+
+  // Velocity-based relative mouse movement. Called every animation frame.
+  // Returns true if the cursor actually moved (for activity tracking).
+  updateRelative(ax, ay, cfg) {
+    if (!this.host) return false;
+    const accel    = cfg?.accel    ?? 8;
+    const maxSpeed = cfg?.maxSpeed ?? 20;
+    const friction = cfg?.friction ?? 0.15;
+    const boundary = cfg?.boundary ?? 'clamp'; // 'clamp' | 'wrap' | 'none'
+
+    // Apply acceleration from stick input.
+    this.relVX += ax * accel;
+    this.relVY += ay * accel;
+
+    // Clamp to max speed.
+    const spd = Math.hypot(this.relVX, this.relVY);
+    if (spd > maxSpeed) {
+      this.relVX = this.relVX / spd * maxSpeed;
+      this.relVY = this.relVY / spd * maxSpeed;
+    }
+
+    // Apply friction.
+    this.relVX *= (1 - friction);
+    this.relVY *= (1 - friction);
+
+    const moved = Math.abs(this.relVX) > 0.01 || Math.abs(this.relVY) > 0.01;
+    if (moved) {
+      this.x += this.relVX;
+      this.y += this.relVY;
+
+      if (boundary !== 'none') {
+        const t = this._target() || this.host;
+        if (t) {
+          const r = t.getBoundingClientRect();
+          if (boundary === 'wrap') {
+            // Wrap: exit one edge → re-enter opposite edge.
+            if (this.x < r.left)   this.x = r.right;
+            else if (this.x > r.right)  this.x = r.left;
+            if (this.y < r.top)    this.y = r.bottom;
+            else if (this.y > r.bottom) this.y = r.top;
+          } else {
+            // Clamp: stop at stage edges, kill velocity on impact.
+            if (this.x < r.left)   { this.x = r.left;   this.relVX = 0; }
+            else if (this.x > r.right)  { this.x = r.right;  this.relVX = 0; }
+            if (this.y < r.top)    { this.y = r.top;    this.relVY = 0; }
+            else if (this.y > r.bottom) { this.y = r.bottom; this.relVY = 0; }
+          }
+        }
+      }
+
+      this._haveAimed = true;
+      this._dispatch('pointermove');
+      this._dispatch('mousemove');
+    }
+    return moved;
   }
 
   press(button) {

@@ -37,7 +37,7 @@ export function defaultProfile() {
       },
       axes: {
         left_stick:  { mode: 'dpad',  deadzone_enter: 0.5, deadzone_exit: 0.35 },
-        right_stick: { mode: 'off',   deadzone: 0.18, radius: 1.2 },
+        right_stick: { mode: 'off',   deadzone: 0.18, radius: 1.2, accel: 8, maxSpeed: 20, friction: 0.15 },
       },
       touch: {
         enabled: 'auto',
@@ -68,6 +68,7 @@ export function defaultProfile() {
         // NB: reservedBottom is global (in localStorage 'fcp:reservedBottom'),
         // not per-profile — it describes a device preference rather than a
         // per-game setting.
+        zoomAnchor: 'center',
       },
     },
     detected: null,
@@ -153,7 +154,15 @@ function migrateInPlace(profile) {
   }
   const axes = profile?.profile?.axes;
   if (axes && !axes.right_stick) {
-    axes.right_stick = { mode: 'off', deadzone: 0.18, radius: 1.2 };
+    axes.right_stick = { mode: 'off', deadzone: 0.18, radius: 1.2, accel: 8, maxSpeed: 20, friction: 0.15 };
+  } else if (axes?.right_stick) {
+    const rs = axes.right_stick;
+    if (rs.accel == null) rs.accel = 8;
+    if (rs.maxSpeed == null) rs.maxSpeed = 20;
+    if (rs.friction == null) rs.friction = 0.15;
+  }
+  if (display && display.zoomAnchor == null) {
+    display.zoomAnchor = 'center';
   }
   // Migrate pre-action profiles: if start/select are still the old keyboard
   // defaults, replace them with the new action bindings.

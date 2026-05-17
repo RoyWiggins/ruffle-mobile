@@ -71,9 +71,19 @@ export class SettingsUI {
     this.reservedBottomValue = panelEl.querySelector('#reserved-bottom-value');
     this.zoom = panelEl.querySelector('#zoom');
     this.zoomValue = panelEl.querySelector('#zoom-value');
+    this.zoomAnchor = panelEl.querySelector('#zoom-anchor');
     this.rightStickMode = panelEl.querySelector('#right-stick-mode');
     this.rightStickRadius = panelEl.querySelector('#right-stick-radius');
     this.rightStickRadiusValue = panelEl.querySelector('#right-stick-radius-value');
+    this.rsAbsSettings = panelEl.querySelector('#rs-abs-settings');
+    this.rsRelSettings = panelEl.querySelector('#rs-rel-settings');
+    this.rsAccel = panelEl.querySelector('#rs-accel');
+    this.rsAccelValue = panelEl.querySelector('#rs-accel-value');
+    this.rsMaxSpeed = panelEl.querySelector('#rs-maxspeed');
+    this.rsMaxSpeedValue = panelEl.querySelector('#rs-maxspeed-value');
+    this.rsFriction = panelEl.querySelector('#rs-friction');
+    this.rsFrictionValue = panelEl.querySelector('#rs-friction-value');
+    this.rsBoundary = panelEl.querySelector('#rs-boundary');
     this.touchMode = panelEl.querySelector('#touch-mode');
     this.touchOpacity = panelEl.querySelector('#touch-opacity');
     this.touchEditBtn = panelEl.querySelector('#touch-edit-btn');
@@ -132,12 +142,22 @@ export class SettingsUI {
       this.onChange?.();
     });
 
+    this.zoomAnchor?.addEventListener('change', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      p.profile.display = p.profile.display || {};
+      p.profile.display.zoomAnchor = this.zoomAnchor.value;
+      this.saveProfile();
+      this.onChange?.();
+    });
+
     this.rightStickMode.addEventListener('change', () => {
       const p = this.getProfile();
       if (!p) return;
       const axes = p.profile.axes = p.profile.axes || {};
       const rs = axes.right_stick = axes.right_stick || { deadzone: 0.18, radius: 1.2 };
       rs.mode = this.rightStickMode.value;
+      this._updateRsSubPanels(rs.mode);
       this.saveProfile();
       this.onChange?.();
     });
@@ -149,6 +169,79 @@ export class SettingsUI {
       rs.radius = Number(this.rightStickRadius.value);
       this.rightStickRadiusValue.textContent = rs.radius.toFixed(2) + '×';
       this.saveProfile();
+    });
+
+    this.rsAccel?.addEventListener('input', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const axes = p.profile.axes = p.profile.axes || {};
+      const rs = axes.right_stick = axes.right_stick || { mode: 'off', deadzone: 0.18, radius: 1.2 };
+      rs.accel = Number(this.rsAccel.value);
+      this.rsAccelValue.textContent = rs.accel;
+      this.saveProfile();
+    });
+    this.rsMaxSpeed?.addEventListener('input', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const axes = p.profile.axes = p.profile.axes || {};
+      const rs = axes.right_stick = axes.right_stick || { mode: 'off', deadzone: 0.18, radius: 1.2 };
+      rs.maxSpeed = Number(this.rsMaxSpeed.value);
+      this.rsMaxSpeedValue.textContent = rs.maxSpeed;
+      this.saveProfile();
+    });
+    this.rsFriction?.addEventListener('input', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const axes = p.profile.axes = p.profile.axes || {};
+      const rs = axes.right_stick = axes.right_stick || { mode: 'off', deadzone: 0.18, radius: 1.2 };
+      rs.friction = Number(this.rsFriction.value);
+      this.rsFrictionValue.textContent = rs.friction.toFixed(2);
+      this.saveProfile();
+    });
+
+    this.rsBoundary?.addEventListener('change', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const axes = p.profile.axes = p.profile.axes || {};
+      const rs = axes.right_stick = axes.right_stick || { mode: 'off', deadzone: 0.18, radius: 1.2 };
+      rs.boundary = this.rsBoundary.value;
+      this.saveProfile();
+    });
+
+    // Preset buttons
+    const presetAsdf = panelEl.querySelector('#preset-asdf');
+    const presetMoveaim = panelEl.querySelector('#preset-moveaim');
+    presetAsdf?.addEventListener('click', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const gp = p.profile.gamepad;
+      gp.dpad_left        = KEY_SPECS.KeyA;
+      gp.dpad_right       = KEY_SPECS.KeyD;
+      gp.dpad_up          = KEY_SPECS.KeyF;
+      gp.dpad_down        = KEY_SPECS.KeyS;
+      gp.left_stick_left  = KEY_SPECS.KeyA;
+      gp.left_stick_right = KEY_SPECS.KeyD;
+      gp.left_stick_up    = KEY_SPECS.KeyF;
+      gp.left_stick_down  = KEY_SPECS.KeyS;
+      this.saveProfile();
+      this.onChange?.();
+      this._renderBindings();
+    });
+    presetMoveaim?.addEventListener('click', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const gp = p.profile.gamepad;
+      gp.dpad_left        = [KEY_SPECS.ArrowLeft,  MOUSE_POINT_SPECS.MousePointLeft];
+      gp.dpad_right       = [KEY_SPECS.ArrowRight, MOUSE_POINT_SPECS.MousePointRight];
+      gp.dpad_up          = [KEY_SPECS.ArrowUp,    MOUSE_POINT_SPECS.MousePointUp];
+      gp.dpad_down        = [KEY_SPECS.ArrowDown,  MOUSE_POINT_SPECS.MousePointDown];
+      gp.left_stick_left  = [KEY_SPECS.ArrowLeft,  MOUSE_POINT_SPECS.MousePointLeft];
+      gp.left_stick_right = [KEY_SPECS.ArrowRight, MOUSE_POINT_SPECS.MousePointRight];
+      gp.left_stick_up    = [KEY_SPECS.ArrowUp,    MOUSE_POINT_SPECS.MousePointUp];
+      gp.left_stick_down  = [KEY_SPECS.ArrowDown,  MOUSE_POINT_SPECS.MousePointDown];
+      this.saveProfile();
+      this.onChange?.();
+      this._renderBindings();
     });
 
     this.touchMode.addEventListener('change', () => {
@@ -176,6 +269,11 @@ export class SettingsUI {
     window.addEventListener('keydown', this._onKeyCapture, true);
   }
 
+  _updateRsSubPanels(mode) {
+    if (this.rsAbsSettings) this.rsAbsSettings.hidden = (mode !== 'mouse' && mode !== 'mouse-radial');
+    if (this.rsRelSettings) this.rsRelSettings.hidden = (mode !== 'relative');
+  }
+
   open() {
     this.panel.hidden = false;
     this.refresh();
@@ -201,11 +299,26 @@ export class SettingsUI {
     const zoom = p.profile.display?.zoom ?? 1.0;
     this.zoom.value = String(zoom);
     this.zoomValue.textContent = Number(zoom).toFixed(2) + '×';
+    if (this.zoomAnchor) this.zoomAnchor.value = p.profile.display?.zoomAnchor || 'center';
     const rs = p.profile.axes?.right_stick || {};
     this.rightStickMode.value = rs.mode || 'off';
     const r = rs.radius ?? 1.2;
     this.rightStickRadius.value = String(r);
     this.rightStickRadiusValue.textContent = Number(r).toFixed(2) + '×';
+    this._updateRsSubPanels(rs.mode || 'off');
+    if (this.rsAccel) {
+      this.rsAccel.value = String(rs.accel ?? 8);
+      this.rsAccelValue.textContent = String(rs.accel ?? 8);
+    }
+    if (this.rsMaxSpeed) {
+      this.rsMaxSpeed.value = String(rs.maxSpeed ?? 20);
+      this.rsMaxSpeedValue.textContent = String(rs.maxSpeed ?? 20);
+    }
+    if (this.rsFriction) {
+      this.rsFriction.value = String(rs.friction ?? 0.15);
+      this.rsFrictionValue.textContent = Number(rs.friction ?? 0.15).toFixed(2);
+    }
+    if (this.rsBoundary) this.rsBoundary.value = rs.boundary || 'clamp';
     this.touchMode.value = p.profile.touch.enabled || 'auto';
     this.touchOpacity.value = String(p.profile.touch.opacity ?? 0.6);
     this._renderBindings();

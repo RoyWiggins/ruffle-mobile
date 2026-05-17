@@ -9,6 +9,7 @@
 
 import { searchGames, getGameInfo, downloadZip } from './flashpoint-search.js';
 import { setLegacyServer } from './flashpoint.js';
+import { isFavorite, getFavoriteList, toggleFavorite } from './favorites.js';
 
 // onLoad(buf, title, launchCommand)  — caller unzips and plays
 // onLoadSwf(buf, title, url)          — caller plays SWF directly (legacy path)
@@ -42,16 +43,19 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
   let totalResults = 0;
   let searching    = false;
   let dlAbort      = null; // AbortController for in-flight download
+  let searchDebounce = null;
 
   // ---------- Panel open / close ----------
 
   function open() {
     panel.hidden = false;
     searchInput.focus();
+    if (!searchInput.value.trim()) showFavorites();
   }
 
-  function close() {
+  function close({ clearUrl = true } = {}) {
     panel.hidden = true;
+    if (clearUrl) history.replaceState(null, '', location.pathname);
   }
 
   closeBtn.addEventListener('click', close);
@@ -72,6 +76,12 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
   searchInput.addEventListener('keydown', (ev) => {
     if (ev.key === 'Enter') triggerSearch();
   });
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounce);
+    const q = searchInput.value.trim();
+    if (!q) { showFavorites(); return; }
+    searchDebounce = setTimeout(() => runSearch(q, 1), 700);
+  });
   loadMoreBtn.addEventListener('click', () => runSearch(currentQuery, currentPage + 1));
 
   document.getElementById('fp-filter-row').addEventListener('click', (ev) => {
@@ -80,6 +90,21 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
     searchInput.value = btn.dataset.query;
     triggerSearch();
   });
+
+  function showFavorites() {
+    resultsList.innerHTML = '';
+    emptyMsg.hidden  = true;
+    errorMsg.hidden  = true;
+    moreWrap.hidden  = true;
+    statusMsg.hidden = true;
+    const favs = getFavoriteList();
+    if (favs.length === 0) {
+      emptyMsg.textContent = 'No favorites yet. Star a game to add it here.';
+      emptyMsg.hidden = false;
+    } else {
+      for (const f of favs) resultsList.appendChild(makeTile(f));
+    }
+  }
 
   async function runSearch(query, page) {
     if (searching) return;
@@ -92,6 +117,8 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
       emptyMsg.hidden  = true;
       errorMsg.hidden  = true;
       moreWrap.hidden  = true;
+      // Update URL with search query.
+      history.replaceState(null, '', '?s=' + encodeURIComponent(query));
     }
 
     statusMsg.hidden = false;
@@ -108,6 +135,14 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
       if (page === 1 && results.length === 0) {
         emptyMsg.hidden = false;
       } else {
+        // Put favorited games first.
+        if (page === 1) {
+          results.sort((a, b) => {
+            const af = isFavorite(a.id) ? 0 : 1;
+            const bf = isFavorite(b.id) ? 0 : 1;
+            return af - bf;
+          });
+        }
         for (const r of results) resultsList.appendChild(makeTile(r));
         moreWrap.hidden = resultsList.children.length >= totalResults;
       }
@@ -143,6 +178,21 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
     titleEl.textContent = game.title;
     tile.appendChild(titleEl);
 
+    // Favorite star button
+    const favBtn = document.createElement('button');
+    favBtn.type = 'button';
+    favBtn.className = 'fp-tile-fav' + (isFavorite(game.id) ? ' is-fav' : '');
+    favBtn.textContent = isFavorite(game.id) ? '★' : '☆';
+    favBtn.title = 'Toggle favorite';
+    favBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      toggleFavorite(game.id, { title: game.title, logoUrl: game.logoUrl });
+      const faved = isFavorite(game.id);
+      favBtn.textContent = faved ? '★' : '☆';
+      favBtn.classList.toggle('is-fav', faved);
+    });
+    tile.appendChild(favBtn);
+
     const select = () => selectGame(game);
     tile.addEventListener('click', select);
     tile.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') select(); });
@@ -154,8 +204,8 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
 
   async function selectGame(game) {
     history.replaceState(null, '', '?fp=' + encodeURIComponent(game.id));
-    close();
-    onSelect?.(game.title);
+    close({ clearUrl: false });
+    onSelect?.(game);
 
     dlTitle.textContent = game.title;
     setProgress(null, 'Fetching game info…');
@@ -233,5 +283,11 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
     // Load a Flashpoint game by UUID directly, skipping the search UI.
     // Used by the deep-link boot path.
     loadById: (id) => selectGame({ id, title: '' }),
+    // Open the panel and immediately search for the given query.
+    searchFor(query) {
+      open();
+      searchInput.value = query;
+      runSearch(query, 1);
+    },
   };
 }
