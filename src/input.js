@@ -295,9 +295,17 @@ export class MouseController {
       this.relVY = this.relVY / spd * maxSpeed;
     }
 
-    // Apply friction.
-    this.relVX *= (1 - friction);
-    this.relVY *= (1 - friction);
+    // Apply friction only when the stick is centered so it doesn't fight
+    // acceleration while the stick is held.
+    if (ax === 0 && ay === 0) {
+      if (friction >= 1) {
+        this.relVX = 0;
+        this.relVY = 0;
+      } else {
+        this.relVX *= (1 - friction);
+        this.relVY *= (1 - friction);
+      }
+    }
 
     const moved = Math.abs(this.relVX) > 0.01 || Math.abs(this.relVY) > 0.01;
     if (moved) {
