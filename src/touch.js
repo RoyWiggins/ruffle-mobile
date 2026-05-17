@@ -22,20 +22,20 @@ export class TouchOverlay {
   }
 
   // Trackpad-style mouse input for the overlay background (non-button areas).
-  // Touch-and-drag moves the cursor; a tap (quick + little movement) fires a click.
-  // This prevents every touch from immediately being a mousedown, which breaks
-  // aim-then-click games on touch screens.
+  // 'aim'  mode: touch moves cursor, lift fires click  (aim-and-fire games)
+  // 'drag' mode: touch fires mousedown, lift fires mouseup (drag-and-drop games)
   _attachTrackpadHandlers() {
-    const active = new Map(); // pointerId → { }
-
+    const active = new Map(); // pointerId → { mode }
 
     this.root.addEventListener('pointerdown', (ev) => {
       if (ev.target !== this.root) return; // buttons/dpad capture their own touches
       if (this.editing) return;
       ev.preventDefault();
       try { this.root.setPointerCapture(ev.pointerId); } catch (_) {}
-      active.set(ev.pointerId, {});
+      const mode = this.getProfile()?.profile?.touch?.trackpadMode ?? 'aim';
+      active.set(ev.pointerId, { mode });
       this.input.aimMouseClient(ev.clientX, ev.clientY);
+      if (mode === 'drag') this.input.mouse.press(0);
       this.onActivity?.('touch');
     }, { passive: false });
 
@@ -49,11 +49,19 @@ export class TouchOverlay {
       if (!t) return;
       active.delete(ev.pointerId);
       try { this.root.releasePointerCapture(ev.pointerId); } catch (_) {}
-      this.input.mouse.press(0);
-      this.input.mouse.release(0);
+      if (t.mode === 'drag') {
+        this.input.mouse.release(0);
+      } else {
+        this.input.mouse.press(0);
+        this.input.mouse.release(0);
+      }
     };
     this.root.addEventListener('pointerup', onUp);
-    this.root.addEventListener('pointercancel', (ev) => active.delete(ev.pointerId));
+    this.root.addEventListener('pointercancel', (ev) => {
+      const t = active.get(ev.pointerId);
+      if (t?.mode === 'drag') this.input.mouse.release(0);
+      active.delete(ev.pointerId);
+    });
   }
 
   setVisible(visible) {
