@@ -209,7 +209,8 @@ export class SettingsUI {
     });
 
     // Preset buttons
-    const presetAsdf = panelEl.querySelector('#preset-asdf');
+    const presetAsdf    = panelEl.querySelector('#preset-asdf');
+    const presetUdlr    = panelEl.querySelector('#preset-udlr');
     const presetMoveaim = panelEl.querySelector('#preset-moveaim');
     presetAsdf?.addEventListener('click', () => {
       const p = this.getProfile();
@@ -223,6 +224,22 @@ export class SettingsUI {
       gp.left_stick_right = KEY_SPECS.KeyD;
       gp.left_stick_up    = KEY_SPECS.KeyF;
       gp.left_stick_down  = KEY_SPECS.KeyS;
+      this.saveProfile();
+      this.onChange?.();
+      this._renderBindings();
+    });
+    presetUdlr?.addEventListener('click', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const gp = p.profile.gamepad;
+      gp.dpad_left        = KEY_SPECS.ArrowLeft;
+      gp.dpad_right       = KEY_SPECS.ArrowRight;
+      gp.dpad_up          = KEY_SPECS.ArrowUp;
+      gp.dpad_down        = KEY_SPECS.ArrowDown;
+      gp.left_stick_left  = KEY_SPECS.ArrowLeft;
+      gp.left_stick_right = KEY_SPECS.ArrowRight;
+      gp.left_stick_up    = KEY_SPECS.ArrowUp;
+      gp.left_stick_down  = KEY_SPECS.ArrowDown;
       this.saveProfile();
       this.onChange?.();
       this._renderBindings();
