@@ -21,7 +21,6 @@
       <span class="swf-close" aria-hidden="true">✕</span>
     </button>
     <div id="game-controls" hidden>
-      <span id="input-mode" data-mode="keyboard" title="Active input mode">⌨</span>
       <button id="mute-btn" type="button" title="Mute audio" aria-pressed="false">🔊</button>
       <button id="net-console-btn" type="button" title="Network console" aria-pressed="false">⑊</button>
       <button id="settings-btn" type="button" title="Mapping settings" aria-expanded="false">⚙</button>
@@ -40,12 +39,17 @@
         <p class="hint" style="margin-top:0.8em">EZPlatformer · MIT · Adam Atomic</p>
       </div>
       <div id="toast" hidden></div>
+      <div id="corner-hud">
+        <span id="input-mode" data-mode="keyboard" title="Active input mode">⌨</span>
+        <button id="fullscreen-exit-btn" type="button" title="Exit fullscreen" aria-label="Exit fullscreen">⛶</button>
+      </div>
     </div>
   </main>
 
   <aside id="settings-panel" hidden aria-label="Mapping settings">
     <header>
       <h2>Settings</h2>
+      <button id="settings-fav-btn" type="button" hidden title="Favorite this game">☆</button>
       <button id="settings-close" type="button" aria-label="Close settings">✕</button>
     </header>
     <section>
@@ -85,6 +89,17 @@
         <input type="range" id="zoom" min="0.5" max="2.0" step="0.05" />
       </label>
       <p class="hint">Per-game scale on top of the aspect-ratio fit.</p>
+      <label>
+        Zoom anchor
+        <select id="zoom-anchor">
+          <option value="center">Center</option>
+          <option value="top">Top edge</option>
+          <option value="left">Left edge</option>
+          <option value="right">Right edge</option>
+          <option value="bottom">Bottom edge</option>
+        </select>
+      </label>
+      <p class="hint">Point that stays fixed when zooming in.</p>
     </section>
     <section>
       <h3>Right stick</h3>
@@ -92,14 +107,24 @@
         Mode
         <select id="right-stick-mode">
           <option value="off">Off</option>
-          <option value="mouse">Aim virtual mouse</option>
+          <option value="mouse">Aim (orbit)</option>
+          <option value="mouse-rect">Aim (full field)</option>
+          <option value="relative">Aim (relative velocity)</option>
         </select>
       </label>
-      <label>
-        Radius <span id="right-stick-radius-value" class="hint" style="min-width:3em;text-align:right"></span>
-        <input type="range" id="right-stick-radius" min="0.6" max="10.0" step="0.1" />
-      </label>
-      <p class="hint">Cursor sits at this fraction of the stage's half-size from center, outside the SWF for direction-only aiming.</p>
+      <div id="rs-abs-settings">
+        <label>Radius <span id="right-stick-radius-value" class="hint"></span>
+          <input type="range" id="right-stick-radius" min="0.6" max="10.0" step="0.1" /></label>
+        <p class="hint">Cursor distance from center as fraction of stage half-size.</p>
+      </div>
+      <div id="rs-rel-settings" hidden>
+        <label>Acceleration <span id="rs-accel-value" class="hint"></span>
+          <input type="range" id="rs-accel" min="1" max="30" step="1" /></label>
+        <label>Max speed <span id="rs-maxspeed-value" class="hint"></span>
+          <input type="range" id="rs-maxspeed" min="5" max="60" step="5" /></label>
+        <label>Friction <span id="rs-friction-value" class="hint"></span>
+          <input type="range" id="rs-friction" min="0.05" max="0.5" step="0.05" /></label>
+      </div>
     </section>
     <section>
       <h3>Touch overlay</h3>
@@ -120,6 +145,10 @@
     <section>
       <h3>Gamepad &amp; touch bindings</h3>
       <p class="hint">Tap a binding then press the keyboard key it should produce.</p>
+      <div id="preset-row">
+        <button id="preset-asdf" type="button" class="secondary">ASDF</button>
+        <button id="preset-moveaim" type="button" class="secondary">Move+Aim</button>
+      </div>
       <div id="bindings-list"></div>
     </section>
     <section>
