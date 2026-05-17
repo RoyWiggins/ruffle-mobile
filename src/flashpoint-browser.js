@@ -19,6 +19,7 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
   const panel          = document.getElementById('fp-panel');
   const closeBtn       = document.getElementById('fp-panel-close');
   const searchInput    = document.getElementById('fp-search-input');
+  const searchClearBtn = document.getElementById('fp-search-clear');
   const searchBtn      = document.getElementById('fp-search-btn');
   const resultsList    = document.getElementById('fp-results');
   const moreWrap       = document.getElementById('fp-results-more');
@@ -79,8 +80,15 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
   searchInput.addEventListener('input', () => {
     clearTimeout(searchDebounce);
     const q = searchInput.value.trim();
+    searchClearBtn.hidden = !searchInput.value;
     if (!q) { showFavorites(); return; }
     searchDebounce = setTimeout(() => runSearch(q, 1), 700);
+  });
+  searchClearBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    searchClearBtn.hidden = true;
+    searchInput.focus();
+    showFavorites();
   });
   loadMoreBtn.addEventListener('click', () => runSearch(currentQuery, currentPage + 1));
 
@@ -88,6 +96,7 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
     const btn = ev.target.closest('.fp-filter-btn');
     if (!btn) return;
     searchInput.value = btn.dataset.query;
+    searchClearBtn.hidden = !searchInput.value;
     triggerSearch();
   });
 
@@ -287,6 +296,7 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) 
     searchFor(query) {
       open();
       searchInput.value = query;
+      searchClearBtn.hidden = !query;
       runSearch(query, 1);
     },
   };

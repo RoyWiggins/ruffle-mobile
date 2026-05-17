@@ -166,6 +166,11 @@ export class InputDispatcher {
     return this.mouse.updateRelative(ax, ay, cfg);
   }
 
+  // Apply a raw pixel delta to the virtual cursor (used by pointer lock).
+  applyMouseDelta(dx, dy, boundary = 'clamp') {
+    this.mouse.applyDelta(dx, dy, boundary);
+  }
+
   _dispatchKey(type, spec) {
     if (!this.host) return;
     try { this.host.focus({ preventScroll: true }); } catch (_) {}
@@ -324,6 +329,36 @@ export class MouseController {
       this._dispatch('mousemove');
     }
     return moved;
+  }
+
+  // Apply a raw pixel delta (for pointer lock). Initialises at stage center
+  // on first call if cursor hasn't been positioned yet.
+  applyDelta(dx, dy, boundary = 'clamp') {
+    if (!this.host) return;
+    if (!this._haveAimed) {
+      const { cx, cy } = this._center();
+      this.x = cx; this.y = cy;
+    }
+    this.x += dx;
+    this.y += dy;
+    if (boundary !== 'none') {
+      const t = this._target() || this.host;
+      if (t) {
+        const r = t.getBoundingClientRect();
+        if (boundary === 'wrap') {
+          if (this.x < r.left)        this.x = r.right;
+          else if (this.x > r.right)  this.x = r.left;
+          if (this.y < r.top)         this.y = r.bottom;
+          else if (this.y > r.bottom) this.y = r.top;
+        } else {
+          this.x = Math.max(r.left, Math.min(r.right,  this.x));
+          this.y = Math.max(r.top,  Math.min(r.bottom, this.y));
+        }
+      }
+    }
+    this._haveAimed = true;
+    this._dispatch('pointermove');
+    this._dispatch('mousemove');
   }
 
   press(button) {

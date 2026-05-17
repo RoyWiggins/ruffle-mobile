@@ -26,7 +26,6 @@ const demoBtn       = document.getElementById('demo-btn');
 const loaderEl     = document.getElementById('loader');
 const currentSwfEl = document.getElementById('current-swf');
 const swfNameEl    = currentSwfEl.querySelector('.swf-name');
-const inputModeEl   = document.getElementById('input-mode');
 const gameControlsEl = document.getElementById('game-controls');
 const settingsBtn   = document.getElementById('settings-btn');
 const settingsPanel = document.getElementById('settings-panel');
@@ -38,15 +37,14 @@ const settingsFavBtn = document.getElementById('settings-fav-btn');
 let currentProfile = defaultProfile();
 let ruffleInstance = null;
 let player = null;
-let inputModeTimer = null;
 let swfDimensions = null; // { width, height } or null
 let currentFpGameId = null;
 let currentFpGameInfo = null;
 
 const input = new InputDispatcher();
 input.onAction = handleAction;
-const gp = new GamepadHandler(input, getCurrentProfile, onInputActivity);
-const touch = new TouchOverlay(touchEl, input, getCurrentProfile, persistProfile, onInputActivity, currentOrientation);
+const gp = new GamepadHandler(input, getCurrentProfile, null);
+const touch = new TouchOverlay(touchEl, input, getCurrentProfile, persistProfile, null, currentOrientation);
 const ui = new SettingsUI({
   panelEl: settingsPanel,
   getProfile: getCurrentProfile,
@@ -65,15 +63,6 @@ function persistProfile() {
   if (currentProfile.swf_sha256) saveProfile(currentProfile);
 }
 
-function setInputMode(mode) {
-  inputModeEl.dataset.mode = mode;
-  inputModeEl.textContent = mode === 'gamepad' ? '🎮' : mode === 'touch' ? '👆' : '⌨';
-  inputModeEl.classList.add('active');
-  clearTimeout(inputModeTimer);
-  inputModeTimer = setTimeout(() => inputModeEl.classList.remove('active'), 1500);
-}
-
-function onInputActivity(mode) { setInputMode(mode); }
 
 function applyProfile() {
   // Release everything currently held — bindings may have changed.
@@ -205,7 +194,6 @@ if (!physicalKeyboard) {
 }
 
 function getReservedBottom() {
-  if (physicalKeyboard) return 0;
   return clamp01(globalReserved[currentOrientation()] || 0);
 }
 
@@ -461,6 +449,47 @@ fullscreenExitBtn?.addEventListener('click', () => {
   document.exitFullscreen?.();
 });
 
+// ── Pointer (cursor) capture ──────────────────────────────────────────────
+const captureBtn = document.getElementById('capture-btn');
+let pointerLocked = false;
+
+captureBtn?.addEventListener('click', () => {
+  if (pointerLocked) document.exitPointerLock?.();
+  else wrapper.requestPointerLock?.();
+});
+
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === wrapper;
+  captureBtn?.setAttribute('aria-pressed', String(pointerLocked));
+});
+
+// While locked: intercept real events (which carry a frozen cursor position)
+// in the capture phase so Ruffle never sees them, then relay delta movement
+// and button presses through our virtual mouse controller.
+for (const type of ['pointermove', 'mousemove']) {
+  wrapper.addEventListener(type, (ev) => {
+    if (!pointerLocked) return;
+    ev.stopPropagation();
+    if (type === 'mousemove' && player) {
+      input.applyMouseDelta(ev.movementX, ev.movementY);
+    }
+  }, { capture: true });
+}
+for (const type of ['pointerdown', 'mousedown']) {
+  wrapper.addEventListener(type, (ev) => {
+    if (!pointerLocked || !player) return;
+    ev.stopPropagation();
+    if (type === 'mousedown') input.mouse.press(ev.button);
+  }, { capture: true });
+}
+for (const type of ['pointerup', 'mouseup']) {
+  wrapper.addEventListener(type, (ev) => {
+    if (!pointerLocked || !player) return;
+    ev.stopPropagation();
+    if (type === 'mouseup') input.mouse.release(ev.button);
+  }, { capture: true });
+}
+
 // Audio mute, persisted in localStorage so it survives reloads.
 let muted = localStorage.getItem('fcp:muted') === '1';
 let savedVolume = 1;
@@ -534,6 +563,7 @@ demoBtn?.addEventListener('click', async () => {
 });
 
 function clearSwf() {
+  if (pointerLocked) document.exitPointerLock?.();
   if (player) {
     try { player.remove(); } catch (_) {}
     player = null;
@@ -654,7 +684,6 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('gamepaddisconnected', () => applyTouchVisibility());
 window.addEventListener('gamepadconnected', () => {
-  setInputMode('gamepad');
   applyTouchVisibility();
 });
 
