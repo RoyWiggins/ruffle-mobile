@@ -503,6 +503,8 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 #fp-download-cancel { align-self: center; margin-top: 0.25em; }
 
 /* ── Network console ──────────────────────────────────────────────────── */
+#capture-btn { display: none; }
+@media (pointer: fine) { #capture-btn { display: revert; } }
 #net-console-btn[aria-pressed="true"],
 #capture-btn[aria-pressed="true"],
 #settings-btn[aria-expanded="true"] { color: var(--accent); }
