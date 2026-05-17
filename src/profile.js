@@ -42,6 +42,7 @@ export function defaultProfile() {
       touch: {
         enabled: 'auto',
         opacity: 0.6,
+        trackpadMode: 'aim',
         layouts: defaultTouchLayouts(),
       },
       display: {
@@ -140,6 +141,7 @@ export function loadProfile(hash) {
 // split. The schema version is the same; this is a within-v1 field rename.
 function migrateInPlace(profile) {
   const touch = profile?.profile?.touch;
+  if (touch && !touch.trackpadMode) touch.trackpadMode = 'aim';
   if (touch && !touch.layouts) {
     const old = Array.isArray(touch.layout) ? touch.layout : null;
     touch.layouts = old
