@@ -81,10 +81,10 @@ export function defaultProfile() {
 function portraitLayout() {
   return [
     { id: 'dpad',     type: 'dpad',   x: 0.20, y: 0.72, size: 0.30 },
-    { id: 'button_y', type: 'button', x: 0.78, y: 0.62, size: 0.13, label: 'Y', binding: 'button_y' },
+    { id: 'button_y', type: 'button', x: 0.78, y: 0.66, size: 0.13, label: 'Y', binding: 'button_y' },
     { id: 'button_x', type: 'button', x: 0.66, y: 0.72, size: 0.13, label: 'X', binding: 'button_x' },
     { id: 'button_b', type: 'button', x: 0.90, y: 0.72, size: 0.13, label: 'B', binding: 'button_b' },
-    { id: 'button_a', type: 'button', x: 0.78, y: 0.82, size: 0.13, label: 'A', binding: 'button_a' },
+    { id: 'button_a', type: 'button', x: 0.78, y: 0.78, size: 0.13, label: 'A', binding: 'button_a' },
     { id: 'start',    type: 'button', x: 0.56, y: 0.93, size: 0.07, label: '▶', binding: 'start' },
     { id: 'select',   type: 'button', x: 0.44, y: 0.93, size: 0.07, label: '⦿', binding: 'select' },
   ];
