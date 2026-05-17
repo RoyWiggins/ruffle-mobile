@@ -168,12 +168,24 @@ export class GamepadHandler {
       const mag = Math.hypot(x, y);
 
       if (rcfg.mode === 'mouse') {
-        // Orbit mode: aim at a fixed radius around stage center.
+        // Orbit mode: angle only, always at full radius.
         const radius = rcfg.radius ?? 1.2;
         if (mag > dead) {
           this.input.aimMouseAt(x, y, radius);
           activity = true;
         }
+      } else if (rcfg.mode === 'mouse-radial') {
+        // Radial mode: magnitude maps to distance (0 = center, 1 = orbit radius).
+        // Always dispatch so cursor snaps to center on stick release.
+        const radius = rcfg.radius ?? 1.2;
+        let sx = 0, sy = 0;
+        if (mag > dead) {
+          const scaled = (mag - dead) / (1 - dead); // remap deadzone boundary → 0
+          sx = (x / mag) * scaled;
+          sy = (y / mag) * scaled;
+          activity = true;
+        }
+        this.input.aimMouseRadial(sx, sy, radius);
       } else if (rcfg.mode === 'mouse-rect') {
         // Full-field mode: map stick directly to stage rect.
         if (mag > dead) {

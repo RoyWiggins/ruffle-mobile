@@ -260,7 +260,7 @@ export class SettingsUI {
   }
 
   _updateRsSubPanels(mode) {
-    if (this.rsAbsSettings) this.rsAbsSettings.hidden = (mode !== 'mouse');
+    if (this.rsAbsSettings) this.rsAbsSettings.hidden = (mode !== 'mouse' && mode !== 'mouse-radial');
     if (this.rsRelSettings) this.rsRelSettings.hidden = (mode !== 'relative');
   }
 

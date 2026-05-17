@@ -151,6 +151,11 @@ export class InputDispatcher {
     this.mouse.aimAt(sx, sy, r);
   }
 
+  // Radial: magnitude maps to distance from center (0 = center, 1 = orbit radius).
+  aimMouseRadial(sx, sy, r) {
+    this.mouse.aimAtRadial(sx, sy, r);
+  }
+
   // Map normalized stick values [-1,1] directly to the stage bounding rect.
   aimMouseAbsoluteNorm(nx, ny) {
     this.mouse.aimAbsoluteNorm(nx, ny);
@@ -225,6 +230,18 @@ export class MouseController {
       cy: r.top + r.height / 2,
       half: Math.min(r.width, r.height) / 2,
     };
+  }
+
+  // Radial mode: stick magnitude maps to distance (0 = center, 1 = orbit radius).
+  aimAtRadial(sx, sy, radius) {
+    if (!this.host) return;
+    const { cx, cy, half } = this._center();
+    const d = half * radius;
+    this.x = cx + sx * d;
+    this.y = cy + sy * d;
+    this._haveAimed = true;
+    this._dispatch('pointermove');
+    this._dispatch('mousemove');
   }
 
   aimAt(sx, sy, radius) {
