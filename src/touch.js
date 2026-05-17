@@ -22,19 +22,20 @@ export class TouchOverlay {
   }
 
   // Trackpad-style mouse input for the overlay background (non-button areas).
-  // Touch-and-drag moves the cursor; a tap (< TAP_PX movement) fires a click.
+  // Touch-and-drag moves the cursor; a tap (quick + little movement) fires a click.
   // This prevents every touch from immediately being a mousedown, which breaks
   // aim-then-click games on touch screens.
   _attachTrackpadHandlers() {
     const TAP_PX = 12;
-    const active = new Map(); // pointerId → { startX, startY, moved }
+    const TAP_MS = 300; // must be quick AND small to count as a tap
+    const active = new Map(); // pointerId → { startX, startY, startT, moved }
 
     this.root.addEventListener('pointerdown', (ev) => {
       if (ev.target !== this.root) return; // buttons/dpad capture their own touches
       if (this.editing) return;
       ev.preventDefault();
       try { this.root.setPointerCapture(ev.pointerId); } catch (_) {}
-      active.set(ev.pointerId, { startX: ev.clientX, startY: ev.clientY, moved: false });
+      active.set(ev.pointerId, { startX: ev.clientX, startY: ev.clientY, startT: Date.now(), moved: false });
       this.input.aimMouseClient(ev.clientX, ev.clientY);
       this.onActivity?.('touch');
     }, { passive: false });
@@ -51,7 +52,7 @@ export class TouchOverlay {
       if (!t) return;
       active.delete(ev.pointerId);
       try { this.root.releasePointerCapture(ev.pointerId); } catch (_) {}
-      if (!t.moved) {
+      if (!t.moved && (Date.now() - t.startT) < TAP_MS) {
         this.input.mouse.press(0);
         this.input.mouse.release(0);
       }
