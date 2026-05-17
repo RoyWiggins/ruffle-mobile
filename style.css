@@ -128,6 +128,8 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
   color: var(--muted); pointer-events: none;
   font-size: 1.05em;
   gap: 0.5em;
+  z-index: 8;
+  background: rgba(22, 22, 24, 0.75);
 }
 #empty-state > * { pointer-events: auto; }
 #empty-state p { margin: 0; }
