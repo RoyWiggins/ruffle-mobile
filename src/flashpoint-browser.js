@@ -13,7 +13,7 @@ import { setLegacyServer } from './flashpoint.js';
 // onLoad(buf, title, launchCommand)  — caller unzips and plays
 // onLoadSwf(buf, title, url)          — caller plays SWF directly (legacy path)
 // onToast(msg, ms)
-export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast }) {
+export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast, onSelect }) {
   // ---------- DOM refs ----------
   const panel          = document.getElementById('fp-panel');
   const closeBtn       = document.getElementById('fp-panel-close');
@@ -155,6 +155,7 @@ export function initFlashpointBrowser({ onLoad, onLoadSwf, onToast }) {
   async function selectGame(game) {
     history.replaceState(null, '', '?fp=' + encodeURIComponent(game.id));
     close();
+    onSelect?.(game.title);
 
     dlTitle.textContent = game.title;
     setProgress(null, 'Fetching game info…');

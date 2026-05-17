@@ -26,6 +26,7 @@ const loaderEl     = document.getElementById('loader');
 const currentSwfEl = document.getElementById('current-swf');
 const swfNameEl    = currentSwfEl.querySelector('.swf-name');
 const inputModeEl   = document.getElementById('input-mode');
+const gameControlsEl = document.getElementById('game-controls');
 const settingsBtn   = document.getElementById('settings-btn');
 const settingsPanel = document.getElementById('settings-panel');
 const fullscreenBtn = document.getElementById('fullscreen-btn');
@@ -81,11 +82,12 @@ function applyProfile() {
     swfNameEl.textContent = currentProfile.label || ('Profile ' + currentProfile.swf_sha256.slice(0, 8));
     loaderEl.hidden = true;
     currentSwfEl.hidden = false;
+    gameControlsEl.hidden = false;
   } else {
     loaderEl.hidden = false;
     currentSwfEl.hidden = true;
+    gameControlsEl.hidden = true;
   }
-  document.getElementById('status-browse-btn').hidden = hasGame;
 }
 
 function applyTouchVisibility() {
@@ -330,14 +332,23 @@ let loadedFromFlashpoint = false;
 async function loadFromFlashpointBuffer(buf, title, launchCommand) {
   wrapper.classList.add('is-loading');
   showToast('Loading archive…', 30000);
+  // Flip the topbar immediately so it looks the same during loading as when loaded.
+  loaderEl.hidden = true;
+  currentSwfEl.hidden = false;
+  gameControlsEl.hidden = false;
+  swfNameEl.textContent = title || '…';
   try {
     const { launchUrl, launchData } = await loadFlashpointArchive(buf, launchCommand);
     const label = title || launchUrl.split('/').pop();
     loadedFromFlashpoint = true;
     if (label) document.title = label;
+    swfNameEl.textContent = label;
     await loadSwfFromBuffer(launchData, label, launchUrl);
   } catch (err) {
     wrapper.classList.remove('is-loading');
+    loaderEl.hidden = false;
+    currentSwfEl.hidden = true;
+    gameControlsEl.hidden = true;
     console.error(err);
     showToast('Failed to load archive: ' + err.message);
   }
@@ -646,6 +657,13 @@ const fpBrowser = initFlashpointBrowser({
     showToast('Failed: ' + err.message, 4000);
   }),
   onToast:   showToast,
+  onSelect:  (title) => {
+    loaderEl.hidden = true;
+    currentSwfEl.hidden = false;
+    gameControlsEl.hidden = false;
+    swfNameEl.textContent = title;
+    if (title) document.title = title;
+  },
 });
 
 // Deep-link: ?fp=<uuid> auto-loads a Flashpoint game on page open.
