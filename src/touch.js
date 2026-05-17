@@ -26,24 +26,21 @@ export class TouchOverlay {
   // This prevents every touch from immediately being a mousedown, which breaks
   // aim-then-click games on touch screens.
   _attachTrackpadHandlers() {
-    const TAP_PX = 12;
-    const TAP_MS = 300; // must be quick AND small to count as a tap
-    const active = new Map(); // pointerId → { startX, startY, startT, moved }
+    const active = new Map(); // pointerId → { }
+
 
     this.root.addEventListener('pointerdown', (ev) => {
       if (ev.target !== this.root) return; // buttons/dpad capture their own touches
       if (this.editing) return;
       ev.preventDefault();
       try { this.root.setPointerCapture(ev.pointerId); } catch (_) {}
-      active.set(ev.pointerId, { startX: ev.clientX, startY: ev.clientY, startT: Date.now(), moved: false });
+      active.set(ev.pointerId, {});
       this.input.aimMouseClient(ev.clientX, ev.clientY);
       this.onActivity?.('touch');
     }, { passive: false });
 
     this.root.addEventListener('pointermove', (ev) => {
-      const t = active.get(ev.pointerId);
-      if (!t) return;
-      if (Math.hypot(ev.clientX - t.startX, ev.clientY - t.startY) > TAP_PX) t.moved = true;
+      if (!active.has(ev.pointerId)) return;
       this.input.aimMouseClient(ev.clientX, ev.clientY);
     });
 
@@ -52,10 +49,8 @@ export class TouchOverlay {
       if (!t) return;
       active.delete(ev.pointerId);
       try { this.root.releasePointerCapture(ev.pointerId); } catch (_) {}
-      if (!t.moved && (Date.now() - t.startT) < TAP_MS) {
-        this.input.mouse.press(0);
-        this.input.mouse.release(0);
-      }
+      this.input.mouse.press(0);
+      this.input.mouse.release(0);
     };
     this.root.addEventListener('pointerup', onUp);
     this.root.addEventListener('pointercancel', (ev) => active.delete(ev.pointerId));
