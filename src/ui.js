@@ -83,6 +83,7 @@ export class SettingsUI {
     this.rsMaxSpeedValue = panelEl.querySelector('#rs-maxspeed-value');
     this.rsFriction = panelEl.querySelector('#rs-friction');
     this.rsFrictionValue = panelEl.querySelector('#rs-friction-value');
+    this.rsBoundary = panelEl.querySelector('#rs-boundary');
     this.touchMode = panelEl.querySelector('#touch-mode');
     this.touchOpacity = panelEl.querySelector('#touch-opacity');
     this.touchEditBtn = panelEl.querySelector('#touch-edit-btn');
@@ -198,6 +199,15 @@ export class SettingsUI {
       this.saveProfile();
     });
 
+    this.rsBoundary?.addEventListener('change', () => {
+      const p = this.getProfile();
+      if (!p) return;
+      const axes = p.profile.axes = p.profile.axes || {};
+      const rs = axes.right_stick = axes.right_stick || { mode: 'off', deadzone: 0.18, radius: 1.2 };
+      rs.boundary = this.rsBoundary.value;
+      this.saveProfile();
+    });
+
     // Preset buttons
     const presetAsdf = panelEl.querySelector('#preset-asdf');
     const presetMoveaim = panelEl.querySelector('#preset-moveaim');
@@ -308,6 +318,7 @@ export class SettingsUI {
       this.rsFriction.value = String(rs.friction ?? 0.15);
       this.rsFrictionValue.textContent = Number(rs.friction ?? 0.15).toFixed(2);
     }
+    if (this.rsBoundary) this.rsBoundary.value = rs.boundary || 'clamp';
     this.touchMode.value = p.profile.touch.enabled || 'auto';
     this.touchOpacity.value = String(p.profile.touch.opacity ?? 0.6);
     this._renderBindings();

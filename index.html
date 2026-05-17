@@ -125,6 +125,14 @@
           <input type="range" id="rs-maxspeed" min="5" max="60" step="5" /></label>
         <label>Friction <span id="rs-friction-value" class="hint"></span>
           <input type="range" id="rs-friction" min="0.05" max="0.5" step="0.05" /></label>
+        <label>
+          Boundary
+          <select id="rs-boundary">
+            <option value="clamp">Clamp to stage</option>
+            <option value="wrap">Wrap around</option>
+            <option value="none">Unconstrained</option>
+          </select>
+        </label>
       </div>
     </section>
     <section>

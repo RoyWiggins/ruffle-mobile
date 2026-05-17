@@ -277,6 +277,7 @@ export class MouseController {
     const accel    = cfg?.accel    ?? 8;
     const maxSpeed = cfg?.maxSpeed ?? 20;
     const friction = cfg?.friction ?? 0.15;
+    const boundary = cfg?.boundary ?? 'clamp'; // 'clamp' | 'wrap' | 'none'
 
     // Apply acceleration from stick input.
     this.relVX += ax * accel;
@@ -297,6 +298,27 @@ export class MouseController {
     if (moved) {
       this.x += this.relVX;
       this.y += this.relVY;
+
+      if (boundary !== 'none') {
+        const t = this._target() || this.host;
+        if (t) {
+          const r = t.getBoundingClientRect();
+          if (boundary === 'wrap') {
+            // Wrap: exit one edge → re-enter opposite edge.
+            if (this.x < r.left)   this.x = r.right;
+            else if (this.x > r.right)  this.x = r.left;
+            if (this.y < r.top)    this.y = r.bottom;
+            else if (this.y > r.bottom) this.y = r.top;
+          } else {
+            // Clamp: stop at stage edges, kill velocity on impact.
+            if (this.x < r.left)   { this.x = r.left;   this.relVX = 0; }
+            else if (this.x > r.right)  { this.x = r.right;  this.relVX = 0; }
+            if (this.y < r.top)    { this.y = r.top;    this.relVY = 0; }
+            else if (this.y > r.bottom) { this.y = r.bottom; this.relVY = 0; }
+          }
+        }
+      }
+
       this._haveAimed = true;
       this._dispatch('pointermove');
       this._dispatch('mousemove');
