@@ -161,6 +161,11 @@ export class InputDispatcher {
     this.mouse.aimAbsoluteNorm(nx, ny);
   }
 
+  // Set cursor to an absolute client-coordinate position (used by trackpad).
+  aimMouseClient(clientX, clientY) {
+    this.mouse.aimAbsoluteClient(clientX, clientY);
+  }
+
   // Velocity-based relative mouse update. Called every frame.
   updateRelativeMouse(ax, ay, cfg) {
     return this.mouse.updateRelative(ax, ay, cfg);
@@ -257,6 +262,16 @@ export class MouseController {
     const d = half * radius;
     this.x = cx + nx * d;
     this.y = cy + ny * d;
+    this._haveAimed = true;
+    this._dispatch('pointermove');
+    this._dispatch('mousemove');
+  }
+
+  // Set cursor to an absolute client-coordinate position and fire move events.
+  aimAbsoluteClient(clientX, clientY) {
+    if (!this.host) return;
+    this.x = clientX;
+    this.y = clientY;
     this._haveAimed = true;
     this._dispatch('pointermove');
     this._dispatch('mousemove');

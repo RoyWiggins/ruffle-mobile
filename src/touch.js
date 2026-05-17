@@ -18,6 +18,46 @@ export class TouchOverlay {
     this._dpadDirState = new Map(); // dpadId -> { up,down,left,right }
 
     this.root.addEventListener('contextmenu', e => e.preventDefault());
+    this._attachTrackpadHandlers();
+  }
+
+  // Trackpad-style mouse input for the overlay background (non-button areas).
+  // Touch-and-drag moves the cursor; a tap (< TAP_PX movement) fires a click.
+  // This prevents every touch from immediately being a mousedown, which breaks
+  // aim-then-click games on touch screens.
+  _attachTrackpadHandlers() {
+    const TAP_PX = 12;
+    const active = new Map(); // pointerId → { startX, startY, moved }
+
+    this.root.addEventListener('pointerdown', (ev) => {
+      if (ev.target !== this.root) return; // buttons/dpad capture their own touches
+      if (this.editing) return;
+      ev.preventDefault();
+      try { this.root.setPointerCapture(ev.pointerId); } catch (_) {}
+      active.set(ev.pointerId, { startX: ev.clientX, startY: ev.clientY, moved: false });
+      this.input.aimMouseClient(ev.clientX, ev.clientY);
+      this.onActivity?.('touch');
+    }, { passive: false });
+
+    this.root.addEventListener('pointermove', (ev) => {
+      const t = active.get(ev.pointerId);
+      if (!t) return;
+      if (Math.hypot(ev.clientX - t.startX, ev.clientY - t.startY) > TAP_PX) t.moved = true;
+      this.input.aimMouseClient(ev.clientX, ev.clientY);
+    });
+
+    const onUp = (ev) => {
+      const t = active.get(ev.pointerId);
+      if (!t) return;
+      active.delete(ev.pointerId);
+      try { this.root.releasePointerCapture(ev.pointerId); } catch (_) {}
+      if (!t.moved) {
+        this.input.mouse.press(0);
+        this.input.mouse.release(0);
+      }
+    };
+    this.root.addEventListener('pointerup', onUp);
+    this.root.addEventListener('pointercancel', (ev) => active.delete(ev.pointerId));
   }
 
   setVisible(visible) {
