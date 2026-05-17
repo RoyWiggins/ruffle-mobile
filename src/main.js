@@ -26,7 +26,6 @@ const demoBtn       = document.getElementById('demo-btn');
 const loaderEl     = document.getElementById('loader');
 const currentSwfEl = document.getElementById('current-swf');
 const swfNameEl    = currentSwfEl.querySelector('.swf-name');
-const inputModeEl   = document.getElementById('input-mode');
 const gameControlsEl = document.getElementById('game-controls');
 const settingsBtn   = document.getElementById('settings-btn');
 const settingsPanel = document.getElementById('settings-panel');
@@ -38,15 +37,14 @@ const settingsFavBtn = document.getElementById('settings-fav-btn');
 let currentProfile = defaultProfile();
 let ruffleInstance = null;
 let player = null;
-let inputModeTimer = null;
 let swfDimensions = null; // { width, height } or null
 let currentFpGameId = null;
 let currentFpGameInfo = null;
 
 const input = new InputDispatcher();
 input.onAction = handleAction;
-const gp = new GamepadHandler(input, getCurrentProfile, onInputActivity);
-const touch = new TouchOverlay(touchEl, input, getCurrentProfile, persistProfile, onInputActivity, currentOrientation);
+const gp = new GamepadHandler(input, getCurrentProfile, null);
+const touch = new TouchOverlay(touchEl, input, getCurrentProfile, persistProfile, null, currentOrientation);
 const ui = new SettingsUI({
   panelEl: settingsPanel,
   getProfile: getCurrentProfile,
@@ -65,15 +63,6 @@ function persistProfile() {
   if (currentProfile.swf_sha256) saveProfile(currentProfile);
 }
 
-function setInputMode(mode) {
-  inputModeEl.dataset.mode = mode;
-  inputModeEl.textContent = mode === 'gamepad' ? '🎮' : mode === 'touch' ? '👆' : '⌨';
-  inputModeEl.classList.add('active');
-  clearTimeout(inputModeTimer);
-  inputModeTimer = setTimeout(() => inputModeEl.classList.remove('active'), 1500);
-}
-
-function onInputActivity(mode) { setInputMode(mode); }
 
 function applyProfile() {
   // Release everything currently held — bindings may have changed.
@@ -205,7 +194,6 @@ if (!physicalKeyboard) {
 }
 
 function getReservedBottom() {
-  if (physicalKeyboard) return 0;
   return clamp01(globalReserved[currentOrientation()] || 0);
 }
 
@@ -696,7 +684,6 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('gamepaddisconnected', () => applyTouchVisibility());
 window.addEventListener('gamepadconnected', () => {
-  setInputMode('gamepad');
   applyTouchVisibility();
 });
 
