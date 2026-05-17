@@ -195,7 +195,7 @@ export class SettingsUI {
       const axes = p.profile.axes = p.profile.axes || {};
       const rs = axes.right_stick = axes.right_stick || { mode: 'off', deadzone: 0.18, radius: 1.2 };
       rs.friction = Number(this.rsFriction.value);
-      this.rsFrictionValue.textContent = rs.friction.toFixed(2);
+      this.rsFrictionValue.textContent = rs.friction >= 1 ? 'instant' : rs.friction.toFixed(2);
       this.saveProfile();
     });
 
@@ -315,8 +315,9 @@ export class SettingsUI {
       this.rsMaxSpeedValue.textContent = String(rs.maxSpeed ?? 20);
     }
     if (this.rsFriction) {
-      this.rsFriction.value = String(rs.friction ?? 0.15);
-      this.rsFrictionValue.textContent = Number(rs.friction ?? 0.15).toFixed(2);
+      const fr = rs.friction ?? 0.15;
+      this.rsFriction.value = String(fr);
+      this.rsFrictionValue.textContent = fr >= 1 ? 'instant' : Number(fr).toFixed(2);
     }
     if (this.rsBoundary) this.rsBoundary.value = rs.boundary || 'clamp';
     this.touchMode.value = p.profile.touch.enabled || 'auto';

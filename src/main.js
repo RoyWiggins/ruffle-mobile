@@ -461,6 +461,47 @@ fullscreenExitBtn?.addEventListener('click', () => {
   document.exitFullscreen?.();
 });
 
+// ── Pointer (cursor) capture ──────────────────────────────────────────────
+const captureBtn = document.getElementById('capture-btn');
+let pointerLocked = false;
+
+captureBtn?.addEventListener('click', () => {
+  if (pointerLocked) document.exitPointerLock?.();
+  else wrapper.requestPointerLock?.();
+});
+
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === wrapper;
+  captureBtn?.setAttribute('aria-pressed', String(pointerLocked));
+});
+
+// While locked: intercept real events (which carry a frozen cursor position)
+// in the capture phase so Ruffle never sees them, then relay delta movement
+// and button presses through our virtual mouse controller.
+for (const type of ['pointermove', 'mousemove']) {
+  wrapper.addEventListener(type, (ev) => {
+    if (!pointerLocked) return;
+    ev.stopPropagation();
+    if (type === 'mousemove' && player) {
+      input.applyMouseDelta(ev.movementX, ev.movementY);
+    }
+  }, { capture: true });
+}
+for (const type of ['pointerdown', 'mousedown']) {
+  wrapper.addEventListener(type, (ev) => {
+    if (!pointerLocked || !player) return;
+    ev.stopPropagation();
+    if (type === 'mousedown') input.mouse.press(ev.button);
+  }, { capture: true });
+}
+for (const type of ['pointerup', 'mouseup']) {
+  wrapper.addEventListener(type, (ev) => {
+    if (!pointerLocked || !player) return;
+    ev.stopPropagation();
+    if (type === 'mouseup') input.mouse.release(ev.button);
+  }, { capture: true });
+}
+
 // Audio mute, persisted in localStorage so it survives reloads.
 let muted = localStorage.getItem('fcp:muted') === '1';
 let savedVolume = 1;
@@ -534,6 +575,7 @@ demoBtn?.addEventListener('click', async () => {
 });
 
 function clearSwf() {
+  if (pointerLocked) document.exitPointerLock?.();
   if (player) {
     try { player.remove(); } catch (_) {}
     player = null;

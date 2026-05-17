@@ -496,6 +496,7 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 
 /* ── Network console ──────────────────────────────────────────────────── */
 #net-console-btn[aria-pressed="true"],
+#capture-btn[aria-pressed="true"],
 #settings-btn[aria-expanded="true"] { color: var(--accent); }
 #net-console {
   position: fixed; bottom: 0; left: 0; right: 0;

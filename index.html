@@ -22,6 +22,7 @@
     </button>
     <div id="game-controls" hidden>
       <button id="mute-btn" type="button" title="Mute audio" aria-pressed="false">🔊</button>
+      <button id="capture-btn" type="button" title="Capture mouse cursor" aria-pressed="false">⊙</button>
       <button id="net-console-btn" type="button" title="Network console" aria-pressed="false">⑊</button>
       <button id="settings-btn" type="button" title="Mapping settings" aria-expanded="false">⚙</button>
       <button id="fullscreen-btn" type="button" title="Fullscreen">⛶</button>
@@ -124,7 +125,7 @@
         <label>Max speed <span id="rs-maxspeed-value" class="hint"></span>
           <input type="range" id="rs-maxspeed" min="5" max="60" step="5" /></label>
         <label>Friction <span id="rs-friction-value" class="hint"></span>
-          <input type="range" id="rs-friction" min="0.05" max="0.5" step="0.05" /></label>
+          <input type="range" id="rs-friction" min="0.05" max="1.0" step="0.05" /></label>
         <label>
           Boundary
           <select id="rs-boundary">
