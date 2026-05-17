@@ -229,10 +229,15 @@ function fitPlayer() {
 
   // Shrink the host by the reserved-bottom fraction so the player fits and
   // aligns within the remaining area; the strip below is left for controls.
-  ruffleHost.style.setProperty('--reserved-bottom', (getReservedBottom() * 100) + '%');
+  // Set an explicit px height so the value is available immediately without
+  // depending on CSS custom-property resolution timing.
+  const reserved = getReservedBottom();
+  const parentH = wrapper.clientHeight;
+  const effectiveH = Math.max(1, parentH - Math.round(reserved * parentH));
+  ruffleHost.style.height = effectiveH + 'px';
 
   const hw = ruffleHost.clientWidth;
-  const hh = ruffleHost.clientHeight;
+  const hh = effectiveH;
   if (hw === 0 || hh === 0) return;
   const zoom = Math.max(0.25, Math.min(4, currentProfile.profile.display?.zoom ?? 1));
   const fitMode = currentProfile.profile.display?.fitMode || 'aspect';

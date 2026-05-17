@@ -108,10 +108,9 @@ main { flex: 1; display: flex; align-items: stretch; justify-content: stretch; m
 #ruffle-host {
   position: absolute;
   top: 0; left: 0; right: 0;
-  /* Reserved-bottom strip is left empty for touch controls. Pinning to
-     top: 0 (rather than relying on normal flow) keeps the strip below in
-     both windowed and fullscreen modes. */
-  height: calc(100% - var(--reserved-bottom, 0%));
+  /* Height is overridden to an explicit px value by fitPlayer() to carve
+     out a reserved strip at the bottom for touch controls. */
+  height: 100%;
   display: flex; justify-content: center; align-items: center;
 }
 #ruffle-host.align-top    { align-items: flex-start; }
