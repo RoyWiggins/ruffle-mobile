@@ -109,7 +109,7 @@ export class TouchOverlay {
 
   _positionItem(el, item) {
     el.style.left = (item.x * 100) + '%';
-    el.style.top  = (item.y * 100) + '%';
+    el.style.top  = item.topExpr ?? (item.y * 100) + '%';
     // Size is a fraction of the screen's smaller dimension (CSS var set in
     // main.js), so fullscreen doesn't grow the d-pad and buttons. Falls back
     // to wrapper cqmin if the variable isn't set.
@@ -207,9 +207,12 @@ export class TouchOverlay {
       ev.preventDefault();
       try { el.setPointerCapture(ev.pointerId); } catch (_) {}
       const rect = this.root.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
       dragStart = {
         px: ev.clientX, py: ev.clientY,
-        ix: item.x, iy: item.y,
+        // Measure actual visual center so topExpr items drag from the right spot.
+        ix: (elRect.left + elRect.width  / 2 - rect.left) / rect.width,
+        iy: (elRect.top  + elRect.height / 2 - rect.top)  / rect.height,
         rect,
       };
     };
@@ -219,6 +222,7 @@ export class TouchOverlay {
       const dy = (ev.clientY - dragStart.py) / dragStart.rect.height;
       item.x = clamp(dragStart.ix + dx, 0.02, 0.98);
       item.y = clamp(dragStart.iy + dy, 0.02, 0.98);
+      delete item.topExpr; // user drag overrides the computed expression
       this._positionItem(el, item);
     };
     const onUp = (ev) => {
