@@ -161,15 +161,31 @@ export class GamepadHandler {
 
     // Right stick → virtual mouse aim
     const rcfg = profile.axes?.right_stick;
-    if (rcfg && rcfg.mode === 'mouse' && pad.axes.length >= 4) {
+    if (rcfg && pad.axes.length >= 4) {
       const dead = rcfg.deadzone ?? 0.18;
-      const radius = rcfg.radius ?? 1.2; // fraction of half the stage's smaller side
       const x = pad.axes[2] ?? 0;
       const y = pad.axes[3] ?? 0;
       const mag = Math.hypot(x, y);
-      if (mag > dead) {
-        this.input.aimMouseAt(x, y, radius);
-        activity = true;
+
+      if (rcfg.mode === 'mouse') {
+        // Orbit mode: aim at a fixed radius around stage center.
+        const radius = rcfg.radius ?? 1.2;
+        if (mag > dead) {
+          this.input.aimMouseAt(x, y, radius);
+          activity = true;
+        }
+      } else if (rcfg.mode === 'mouse-rect') {
+        // Full-field mode: map stick directly to stage rect.
+        if (mag > dead) {
+          this.input.aimMouseAbsoluteNorm(x, y);
+          activity = true;
+        }
+      } else if (rcfg.mode === 'relative') {
+        // Relative velocity mode: run every frame so friction drains properly.
+        const ax = mag > dead ? x : 0;
+        const ay = mag > dead ? y : 0;
+        const moved = this.input.updateRelativeMouse(ax, ay, rcfg);
+        if (moved) activity = true;
       }
     }
 

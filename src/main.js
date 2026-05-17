@@ -15,6 +15,7 @@ import {
   setLegacyServer, cacheSwf,
 } from './flashpoint.js';
 import { initFlashpointBrowser } from './flashpoint-browser.js';
+import { isFavorite, toggleFavorite } from './favorites.js';
 
 const wrapper       = document.getElementById('player-wrapper');
 const ruffleHost    = document.getElementById('ruffle-host');
@@ -30,13 +31,17 @@ const gameControlsEl = document.getElementById('game-controls');
 const settingsBtn   = document.getElementById('settings-btn');
 const settingsPanel = document.getElementById('settings-panel');
 const fullscreenBtn = document.getElementById('fullscreen-btn');
+const fullscreenExitBtn = document.getElementById('fullscreen-exit-btn');
 const muteBtn = document.getElementById('mute-btn');
+const settingsFavBtn = document.getElementById('settings-fav-btn');
 
 let currentProfile = defaultProfile();
 let ruffleInstance = null;
 let player = null;
 let inputModeTimer = null;
 let swfDimensions = null; // { width, height } or null
+let currentFpGameId = null;
+let currentFpGameInfo = null;
 
 const input = new InputDispatcher();
 input.onAction = handleAction;
@@ -248,6 +253,7 @@ function fitPlayer() {
   // to letting Ruffle fill the host. (Custom and Fill modes also don't need
   // the native-canvas trick — they're explicit about wanting Ruffle to
   // scale.)
+  const anchor = currentProfile.profile.display?.zoomAnchor || 'center';
   const useNative = swfDimensions && fitMode === 'aspect';
   if (!useNative) {
     let w, h;
@@ -264,17 +270,30 @@ function fitPlayer() {
       else             { h = hh; w = h * aspect; }
     }
     w *= zoom; h *= zoom;
-    player.style.position = '';
-    player.style.top = '';
-    player.style.left = '';
+    const off = getDisplayOffset();
+    // Compute anchor-aware translation.
+    let tx, ty;
+    if (anchor === 'left')        tx = 0;
+    else if (anchor === 'right')  tx = hw - w;
+    else                          tx = (hw - w) / 2;
+    if (anchor === 'top')         ty = 0;
+    else if (anchor === 'bottom') ty = hh - h;
+    else {
+      // For vertical: use the align setting for the non-anchor case.
+      if (align === 'top')         ty = 0;
+      else if (align === 'bottom') ty = hh - h;
+      else                         ty = (hh - h) / 2;
+    }
+    tx += off.dx * hw;
+    ty += off.dy * hh;
+    player.style.position = 'absolute';
+    player.style.top = '0';
+    player.style.left = '0';
     player.style.width = w + 'px';
     player.style.height = h + 'px';
-    player.style.transform = '';
-    player.style.transformOrigin = '';
-    const off = getDisplayOffset();
-    const tx = off.dx * hw;
-    const ty = off.dy * hh;
-    player.style.translate = tx || ty ? `${tx}px ${ty}px` : '';
+    player.style.transformOrigin = 'top left';
+    player.style.transform = `translate(${tx}px, ${ty}px)`;
+    player.style.translate = '';
     return;
   }
 
@@ -293,11 +312,18 @@ function fitPlayer() {
   const fit = Math.min(hw / sw, hh / sh) * zoom;
   const vw = sw * fit;
   const vh = sh * fit;
-  let topPx;
-  if (align === 'top') topPx = 0;
-  else if (align === 'bottom') topPx = hh - vh;
-  else topPx = (hh - vh) / 2;
-  const leftPx = (hw - vw) / 2;
+  // Compute anchor-aware position.
+  let leftPx, topPx;
+  if (anchor === 'left')        leftPx = 0;
+  else if (anchor === 'right')  leftPx = hw - vw;
+  else                          leftPx = (hw - vw) / 2;
+  if (anchor === 'top')         topPx = 0;
+  else if (anchor === 'bottom') topPx = hh - vh;
+  else {
+    if (align === 'top')         topPx = 0;
+    else if (align === 'bottom') topPx = hh - vh;
+    else                         topPx = (hh - vh) / 2;
+  }
   const off = getDisplayOffset();
   const tx = leftPx + off.dx * hw;
   const ty = topPx  + off.dy * hh;
@@ -307,6 +333,7 @@ function fitPlayer() {
 }
 
 async function loadFromFile(file) {
+  history.replaceState(null, '', location.pathname);
   if (isFlashpointZip(file)) {
     await loadFromZip(file);
     return;
@@ -381,6 +408,7 @@ settingsBtn.addEventListener('click', () => {
   if (settingsPanel.hidden) ui.open();
   else ui.close();
   settingsBtn.setAttribute('aria-expanded', String(!settingsPanel.hidden));
+  refreshFavBtn();
   applyAutoPause();
 });
 settingsPanel.querySelector('#settings-close').addEventListener('click', () => {
@@ -429,6 +457,10 @@ fullscreenBtn.addEventListener('click', () => {
   }
 });
 
+fullscreenExitBtn?.addEventListener('click', () => {
+  document.exitFullscreen?.();
+});
+
 // Audio mute, persisted in localStorage so it survives reloads.
 let muted = localStorage.getItem('fcp:muted') === '1';
 let savedVolume = 1;
@@ -467,6 +499,23 @@ muteBtn.addEventListener('click', () => {
 });
 refreshMuteBtn();
 
+function refreshFavBtn() {
+  if (!settingsFavBtn) return;
+  if (!currentFpGameId) {
+    settingsFavBtn.hidden = true;
+    return;
+  }
+  settingsFavBtn.hidden = false;
+  const faved = isFavorite(currentFpGameId);
+  settingsFavBtn.textContent = faved ? '★' : '☆';
+  settingsFavBtn.title = faved ? 'Remove from favorites' : 'Favorite this game';
+}
+settingsFavBtn?.addEventListener('click', () => {
+  if (!currentFpGameId) return;
+  toggleFavorite(currentFpGameId, currentFpGameInfo);
+  refreshFavBtn();
+});
+
 // Belt-and-braces: even with Ruffle's contextMenu config off, suppress the
 // browser's own right-click / long-press menu inside the player wrapper.
 wrapper.addEventListener('contextmenu', (ev) => ev.preventDefault());
@@ -475,6 +524,7 @@ currentSwfEl.addEventListener('click', () => clearSwf());
 
 const emptyStateEl = document.getElementById('empty-state');
 demoBtn?.addEventListener('click', async () => {
+  history.replaceState(null, '', location.pathname);
   demoBtn.disabled = true;
   try {
     await loadFromUrl(new URL('demos/ezplatformer.swf', document.baseURI).toString());
@@ -494,6 +544,9 @@ function clearSwf() {
   wrapper.classList.remove('has-swf', 'is-loading');
   ruffleHost.innerHTML = '';
   currentProfile = defaultProfile();
+  currentFpGameId = null;
+  currentFpGameInfo = null;
+  refreshFavBtn();
   applyProfile();
   clearFlashpointCache().catch(() => {});
   setLegacyServer(null).catch(() => {});
@@ -657,7 +710,10 @@ const fpBrowser = initFlashpointBrowser({
     showToast('Failed: ' + err.message, 4000);
   }),
   onToast:   showToast,
-  onSelect:  (title) => {
+  onSelect:  (game) => {
+    currentFpGameId   = game.id   || null;
+    currentFpGameInfo = game;
+    const title = game.title || '';
     loaderEl.hidden = true;
     currentSwfEl.hidden = false;
     gameControlsEl.hidden = false;
@@ -667,8 +723,16 @@ const fpBrowser = initFlashpointBrowser({
 });
 
 // Deep-link: ?fp=<uuid> auto-loads a Flashpoint game on page open.
-const deepLinkId = new URLSearchParams(location.search).get('fp');
-if (deepLinkId) fpBrowser.loadById(deepLinkId);
+const params = new URLSearchParams(location.search);
+const deepLinkId = params.get('fp');
+if (deepLinkId) {
+  currentFpGameId = deepLinkId;
+  fpBrowser.loadById(deepLinkId);
+}
+
+// ?s= search query: open browser and search on load.
+const sParam = params.get('s');
+if (sParam) fpBrowser.searchFor(sParam);
 
 // Service worker patches dead CDN dependencies in old SWFs (e.g. Neopets
 // games that loadMovie a now-503ing high-scores wrapper). Only runs on
